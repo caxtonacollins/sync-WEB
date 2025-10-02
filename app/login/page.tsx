@@ -36,27 +36,35 @@ export default function LoginPage() {
 
   const handleTokenLogin = async (token: string) => {
     try {
-      const success = await loginWithToken(token);
+      const refreshToken = localStorage.getItem("refresh_token");
+      if (!refreshToken) {
+        throw new Error("No refresh token found");
+      }
+      const success = await loginWithToken(token, refreshToken);
       if (success) {
         addToast("Welcome back!", "success");
       }
     } catch (error) {
       // If token is invalid, show returning user screen
       localStorage.removeItem("token");
+      localStorage.removeItem("refresh_token");
       setIsReturningUser(true);
     }
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      localStorage.setItem("lastEmail", email);
-      addToast("Login successful!", "success");
+      const result = await login(email, password);
+      if (!result.success) {
+        addToast(result.error || "Invalid email or password", "error");
+      } else {
+        addToast("Login successful!", "success");
+      }
     } catch (error) {
-      addToast("Login failed. Please check your credentials.", "error");
+      console.error("Login error:", error);
+      addToast("An unexpected error occurred. Please try again.", "error");
     } finally {
       setIsLoading(false);
     }

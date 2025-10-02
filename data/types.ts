@@ -47,6 +47,7 @@ export interface FiatAccount {
   accountName: string;
   bankName?: string;
   currency: string;
+  balance?: number;
   isDefault: boolean;
   isActive: boolean;
   createdAt: string;

@@ -8,7 +8,7 @@ const actions = [
   { name: 'Data', icon: Wifi, href: '/pay-bills/data' },
   { name: 'Electric', icon: Zap, href: '/pay-bills/electricity' },
   { name: 'Swap', icon: Repeat, href: '/swap/new' },
-  { name: 'Transfer', icon: Send, href: '/dashboard/transfer' },
+  { name: 'Transfer', icon: Send, href: '/wallet' },
   { name: 'More', icon: MoreHorizontal, href: '/actions' },
 ];
 

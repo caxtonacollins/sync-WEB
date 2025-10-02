@@ -79,9 +79,8 @@ export default function TransactionsPage() {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="py-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-8">
+        <div className="space-y-8">
+          <div className="flex items-center justify-between">
               <h1 className="text-3xl font-bold text-white flex items-center">
                 <TrendingUpIcon className="h-8 w-8 mr-3 text-blue-400" />
                 Transaction History
@@ -181,9 +180,10 @@ export default function TransactionsPage() {
                               {transaction.currency}
                             </td>
                           </tr>
-                        ))) : (
+                        ))
+                      ) : (
                         <tr>
-                          <td colSpan={4} className="px-6 py-4 text-center text-gray-400">
+                          <td colSpan={6} className="px-6 py-4 text-center text-gray-400">
                             No recent transactions.
                           </td>
                         </tr>
@@ -193,7 +193,6 @@ export default function TransactionsPage() {
                 </div>
               </div>
             )}
-          </div>
         </div>
       </Layout>
     </ProtectedRoute>

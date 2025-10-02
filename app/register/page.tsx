@@ -21,15 +21,28 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Basic client-side validation
+    if (!email || !password || !firstName || !lastName) {
+      addToast("Please fill in all required fields.", "error")
+      return
+    }
+    
+    if (password.length < 8) {
+      addToast("Password must be at least 8 characters long.", "error")
+      return
+    }
+    
     setIsLoading(true)
 
     try {
       await createUser({ firstName, lastName, email, password, phoneNumber });
-
-      addToast("Registration successful! Please login.", "success")
+      addToast("Registration successful! Please login with your credentials.", "success")
       router.push("/login")
-    } catch (error) {
-      addToast("Registration failed. Please try again.", "error")
+    } catch (error: any) {
+      // Extract error message from the error response if available
+      const errorMessage = error.response?.data?.message || error.message || 'Registration failed. Please try again.';
+      addToast(errorMessage, "error")
     } finally {
       setIsLoading(false)
     }

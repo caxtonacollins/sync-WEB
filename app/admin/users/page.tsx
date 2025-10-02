@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/contexts/ToastContext"
 import AdminProtectedRoute from "@/components/AdminProtectedRoute"
+import Layout from "@/components/Layout"
 import { getAllUsers } from "@/api/routes/user"
 import { User } from "@/types/types" // Using our global User type
 import { UsersIcon } from "@heroicons/react/24/outline"
@@ -64,15 +65,20 @@ export default function UserManagementPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="loading-spinner h-12 w-12"></div>
-      </div>
+      <AdminProtectedRoute>
+        <Layout>
+          <div className="flex items-center justify-center h-64">
+            <div className="loading-spinner h-12 w-12"></div>
+          </div>
+        </Layout>
+      </AdminProtectedRoute>
     )
   }
 
   return (
     <AdminProtectedRoute>
-      <div className="space-y-8">
+      <Layout>
+        <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-white flex items-center">
             <UsersIcon className="h-8 w-8 mr-3 text-blue-400" />
@@ -121,7 +127,8 @@ export default function UserManagementPage() {
             </table>
           </div>
         </div>
-      </div>
+        </div>
+      </Layout>
     </AdminProtectedRoute>
   )
 }

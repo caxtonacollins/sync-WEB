@@ -35,6 +35,7 @@ export interface User {
   status: "ACTIVE" | "SUSPENDED" | "CLOSED" | "RESTRICTED";
   phoneNumber?: string;
   address?: string;
+  password: string;
   city?: string;
   state?: string;
   country?: string;
