@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Shield background with gradient -->
+    <path d="M256 32L448 96V240C448 352 368 448 256 480C144 448 64 352 64 240V96L256 32Z" fill="url(#shield_gradient)"/>
+    
+    <!-- Helmet design -->
+    <path d="M256 128C309 128 352 171 352 224V288C352 314 342 338 324 355C306 372 282 382 256 382C230 382 206 372 188 355C170 338 160 314 160 288V224C160 171 203 128 256 128Z" fill="white"/>
+    
+    <!-- Helmet details -->
+    <path d="M256 160C291 160 320 189 320 224V288C320 306 313 323 300 336C287 349 272 356 256 356C240 356 225 349 212 336C199 323 192 306 192 288V224C192 189 221 160 256 160Z" fill="#4F46E5"/>
+    
+    <!-- Plume/crest -->
+    <path d="M256 96C282 96 304 118 304 144H208C208 118 230 96 256 96Z" fill="white"/>
+    
+    <!-- Gradient definition -->
+    <defs>
+        <linearGradient id="shield_gradient" x1="256" y1="32" x2="256" y2="480">
+            <stop offset="0%" stop-color="#6366F1"/>
+            <stop offset="100%" stop-color="#4F46E5"/>
+        </linearGradient>
+    </defs>
+</svg>
