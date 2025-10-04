@@ -8,11 +8,11 @@ export const createUser = async (userData: any) => {
       userData,
       { validateStatus: (status) => status < 500 } // Don't throw for 4xx errors
     );
-    
+
     if (response.status >= 400) {
-      throw new Error(response.data?.message || 'Registration failed');
+      throw new Error(response.data?.message || "Registration failed");
     }
-    
+
     return response.data;
   } catch (error: any) {
     if (axios.isAxiosError(error)) {
@@ -31,9 +31,12 @@ export const getAllUsers = async (token: string) => {
 };
 
 export const getUserById = async (userId: string, token: string) => {
-  const response = await axios.get(`${process.env.BACKEND_URL}/user/${userId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await axios.get(
+    `${process.env.BACKEND_URL}/user/${userId}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
   return response.data;
 };
 
@@ -51,20 +54,35 @@ export const getUserByCryptoAddress = async (
 };
 
 export const getUserByEmail = async (email: string, token: string) => {
-  const response = await axios.get(`${process.env.BACKEND_URL}/user/email/${email}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await axios.get(
+    `${process.env.BACKEND_URL}/user/email/${email}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
   return response.data;
 };
 
-export const updateUserProfile = async (userId: string, profileData: User, token: string) => {
-  const response = await axios.patch(`${process.env.BACKEND_URL}/user/${userId}`, profileData, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const updateUserProfile = async (
+  userId: string,
+  profileData: User,
+  token: string
+) => {
+  const response = await axios.patch(
+    `${process.env.BACKEND_URL}/user/${userId}`,
+    profileData,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
   return response.data;
 };
 
-export const changePassword = async (userId: string, passwordData: { password: string }, token: string) => {
+export const changePassword = async (
+  userId: string,
+  passwordData: { password: string },
+  token: string
+) => {
   const response = await axios.patch(
     `${process.env.BACKEND_URL}/user/${userId}/password`,
     passwordData,
@@ -83,9 +101,12 @@ export const verifyKyc = async (userId: string, token: string) => {
 };
 
 export const deleteUser = async (userId: string, token: string) => {
-  const response = await axios.delete(`${process.env.BACKEND_URL}/user/${userId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await axios.delete(
+    `${process.env.BACKEND_URL}/user/${userId}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
   return response.data;
 };
 
@@ -99,11 +120,9 @@ export const getDashboardData = async (userId: string, token: string) => {
         },
       }
     );
-    console.log("Dashboard data:", data);
     return data;
   } catch (error) {
     console.error("Failed to fetch dashboard data:", error);
     throw new Error("Failed to fetch dashboard data");
   }
 };
-

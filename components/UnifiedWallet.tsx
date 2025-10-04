@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/contexts/ToastContext';
-import { 
-  Wallet, 
-  CreditCard, 
-  Coins, 
-  ArrowUpDown, 
+import React, { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
+import {
+  Wallet,
+  CreditCard,
+  Coins,
+  ArrowUpDown,
   Plus,
   Eye,
   EyeOff,
   TrendingUp,
-  TrendingDown
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  TrendingDown,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface WalletBalance {
   currency: string;
@@ -40,7 +40,7 @@ interface UnifiedWalletData {
 
 interface WalletTransaction {
   id: string;
-  type: 'fiat' | 'crypto';
+  type: "fiat" | "crypto";
   currency: string;
   amount: number;
   status: string;
@@ -55,7 +55,7 @@ const UnifiedWallet = () => {
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showBalances, setShowBalances] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     if (user) {
@@ -67,51 +67,26 @@ const UnifiedWallet = () => {
   const loadWalletData = async () => {
     try {
       setLoading(true);
-      
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/wallet/balance', {
-      //   headers: { Authorization: `Bearer ${token}` }
-      // });
-      // const data = await response.json();
-      
-      // Mock data for now
-      const mockData: UnifiedWalletData = {
-        userId: user?.id || '',
-        fiatBalances: [
-          {
-            currency: 'NGN',
-            balance: 125000,
-            accountId: 'fiat-1',
-            provider: 'monnify',
-            isDefault: true,
-          },
-        ],
-        cryptoBalances: [
-          {
-            currency: 'STRK',
-            balance: 250,
-            walletId: 'crypto-1',
-            network: 'starknet',
-            address: '0x1234...5678',
-            isDefault: true,
-          },
-          {
-            currency: 'ETH',
-            balance: 0.15,
-            walletId: 'crypto-2',
-            network: 'starknet',
-            address: '0x1234...5678',
-            isDefault: false,
-          },
-        ],
-        totalValueUSD: 450,
-        totalValueNGN: 720000,
-      };
-      
-      setWalletData(mockData);
+
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        `${process.env.BACKEND_URL}/wallet/balance`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const data = await response.json();
+
+      console.log("Fetched wallet data:", data);
+      if (!data || !data.fiatBalances || !data.cryptoBalances) {
+        throw new Error("Invalid wallet data received");
+      }
+
+      setWalletData(data);
     } catch (error) {
-      console.error('Failed to load wallet data:', error);
-      addToast('Failed to load wallet data', 'error');
+      console.error("Failed to load wallet data:", error);
+      addToast("Failed to load wallet data", "error");
     } finally {
       setLoading(false);
     }
@@ -122,43 +97,43 @@ const UnifiedWallet = () => {
       // TODO: Replace with actual API call
       const mockTransactions: WalletTransaction[] = [
         {
-          id: '1',
-          type: 'fiat',
-          currency: 'NGN',
+          id: "1",
+          type: "fiat",
+          currency: "NGN",
           amount: 25000,
-          status: 'completed',
-          reference: 'DEP_001',
+          status: "completed",
+          reference: "DEP_001",
           createdAt: new Date().toISOString(),
         },
         {
-          id: '2',
-          type: 'crypto',
-          currency: 'STRK',
+          id: "2",
+          type: "crypto",
+          currency: "STRK",
           amount: 50,
-          status: 'completed',
-          reference: 'BRIDGE_001',
+          status: "completed",
+          reference: "BRIDGE_001",
           createdAt: new Date(Date.now() - 86400000).toISOString(),
         },
       ];
-      
+
       setTransactions(mockTransactions);
     } catch (error) {
-      console.error('Failed to load transactions:', error);
+      console.error("Failed to load transactions:", error);
     }
   };
 
   const handleBridgeLiquidity = () => {
-    addToast('Liquidity bridge feature coming soon!', 'info');
+    addToast("Liquidity bridge feature coming soon!", "info");
   };
 
-  const handleAddFunds = (type: 'fiat' | 'crypto') => {
-    addToast(`Add ${type} funds feature coming soon!`, 'info');
+  const handleAddFunds = (type: "fiat" | "crypto") => {
+    addToast(`Add ${type} funds feature coming soon!`, "info");
   };
 
   const formatCurrency = (amount: number, currency: string) => {
-    if (currency === 'NGN') {
+    if (currency === "NGN") {
       return `₦${amount.toLocaleString()}`;
-    } else if (currency === 'USD') {
+    } else if (currency === "USD") {
       return `$${amount.toLocaleString()}`;
     } else {
       return `${amount.toLocaleString()} ${currency}`;
@@ -167,10 +142,14 @@ const UnifiedWallet = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-900 text-green-400';
-      case 'pending': return 'bg-yellow-900 text-yellow-400';
-      case 'failed': return 'bg-red-900 text-red-400';
-      default: return 'bg-gray-900 text-gray-400';
+      case "completed":
+        return "bg-green-900 text-green-400";
+      case "pending":
+        return "bg-yellow-900 text-yellow-400";
+      case "failed":
+        return "bg-red-900 text-red-400";
+      default:
+        return "bg-gray-900 text-gray-400";
     }
   };
 
@@ -182,7 +161,7 @@ const UnifiedWallet = () => {
           <div className="h-12 bg-gray-700 rounded w-1/2"></div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[1, 2].map(i => (
+          {[1, 2].map((i) => (
             <div key={i} className="bg-gray-800 p-6 rounded-2xl animate-pulse">
               <div className="h-4 bg-gray-700 rounded w-1/3 mb-4"></div>
               <div className="h-8 bg-gray-700 rounded w-1/2"></div>
@@ -203,7 +182,9 @@ const UnifiedWallet = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               <Wallet className="h-6 w-6 text-purple-400 mr-2" />
-              <h2 className="text-xl font-semibold text-white">Total Portfolio</h2>
+              <h2 className="text-xl font-semibold text-white">
+                Total Portfolio
+              </h2>
             </div>
             <Button
               variant="ghost"
@@ -211,16 +192,24 @@ const UnifiedWallet = () => {
               onClick={() => setShowBalances(!showBalances)}
               className="text-gray-400 hover:text-white"
             >
-              {showBalances ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showBalances ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
             </Button>
           </div>
-          
+
           <div className="text-center">
             <div className="text-3xl font-bold text-white mb-2">
-              {showBalances ? formatCurrency(walletData.totalValueNGN, 'NGN') : '••••••'}
+              {showBalances
+                ? formatCurrency(walletData.totalValueNGN, "NGN")
+                : "••••••"}
             </div>
             <div className="text-lg text-purple-400">
-              {showBalances ? formatCurrency(walletData.totalValueUSD, 'USD') : '••••••'}
+              {showBalances
+                ? formatCurrency(walletData.totalValueUSD, "USD")
+                : "••••••"}
             </div>
           </div>
         </CardContent>
@@ -229,13 +218,19 @@ const UnifiedWallet = () => {
       {/* Wallet Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 bg-gray-800">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-purple-600">
+          <TabsTrigger
+            value="overview"
+            className="data-[state=active]:bg-purple-600"
+          >
             Overview
           </TabsTrigger>
           <TabsTrigger value="fiat" className="data-[state=active]:bg-blue-600">
             Fiat
           </TabsTrigger>
-          <TabsTrigger value="crypto" className="data-[state=active]:bg-green-600">
+          <TabsTrigger
+            value="crypto"
+            className="data-[state=active]:bg-green-600"
+          >
             Crypto
           </TabsTrigger>
         </TabsList>
@@ -252,18 +247,23 @@ const UnifiedWallet = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-white mb-2">
-                  {showBalances ? 
-                    formatCurrency(walletData.fiatBalances.reduce((sum, b) => sum + b.balance, 0), 'NGN') : 
-                    '••••••'
-                  }
+                  {showBalances
+                    ? formatCurrency(
+                        walletData.fiatBalances.reduce(
+                          (sum, b) => sum + b.balance,
+                          0
+                        ),
+                        "NGN"
+                      )
+                    : "••••••"}
                 </div>
                 <p className="text-sm text-gray-400 mb-3">
                   {walletData.fiatBalances.length} account(s)
                 </p>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   className="bg-blue-600 hover:bg-blue-700"
-                  onClick={() => handleAddFunds('fiat')}
+                  onClick={() => handleAddFunds("fiat")}
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   Add Funds
@@ -281,21 +281,27 @@ const UnifiedWallet = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-white mb-2">
-                  {showBalances ? 
-                    formatCurrency(walletData.cryptoBalances.reduce((sum, b) => sum + (b.balance * 800), 0), 'NGN') : 
-                    '••••••'
-                  }
+                  {showBalances
+                    ? formatCurrency(
+                        walletData.cryptoBalances.reduce(
+                          (sum, b) => sum + b.balance * 800,
+                          0
+                        ),
+                        "USD"
+                      )
+                    : "••••••"}
                 </div>
                 <p className="text-sm text-gray-400 mb-3">
                   {walletData.cryptoBalances.length} wallet(s)
                 </p>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   className="bg-green-600 hover:bg-green-700"
-                  onClick={() => handleAddFunds('crypto')}
+                  onClick={() => handleAddFunds("crypto")}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Buy Crypto
+                  Add Token
+                  {/* should open a modal to select which token address to copy or share.... showing all the list of tokens in the wallet, balance, market value and network */}
                 </Button>
               </CardContent>
             </Card>
@@ -311,9 +317,10 @@ const UnifiedWallet = () => {
             </CardHeader>
             <CardContent>
               <p className="text-gray-400 mb-4">
-                Seamlessly convert between fiat and crypto using our automated liquidity bridge.
+                Seamlessly convert between fiat and crypto using our automated
+                liquidity bridge.
               </p>
-              <Button 
+              <Button
                 className="w-full bg-purple-600 hover:bg-purple-700"
                 onClick={handleBridgeLiquidity}
               >
@@ -333,16 +340,24 @@ const UnifiedWallet = () => {
                       <CreditCard className="h-5 w-5 text-blue-400" />
                     </div>
                     <div>
-                      <p className="font-semibold text-white">{balance.currency} Account</p>
-                      <p className="text-sm text-gray-400">{balance.provider}</p>
+                      <p className="font-semibold text-white">
+                        {balance.currency} Account
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        {balance.provider}
+                      </p>
                       {balance.isDefault && (
-                        <Badge className="mt-1 bg-blue-900 text-blue-400">Default</Badge>
+                        <Badge className="mt-1 bg-blue-900 text-blue-400">
+                          Default
+                        </Badge>
                       )}
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-xl font-bold text-white">
-                      {showBalances ? formatCurrency(balance.balance, balance.currency) : '••••••'}
+                      {showBalances
+                        ? formatCurrency(balance.balance, balance.currency)
+                        : "••••••"}
                     </p>
                   </div>
                 </div>
@@ -361,22 +376,30 @@ const UnifiedWallet = () => {
                       <Coins className="h-5 w-5 text-green-400" />
                     </div>
                     <div>
-                      <p className="font-semibold text-white">{balance.currency}</p>
+                      <p className="font-semibold text-white">
+                        {balance.currency}
+                      </p>
                       <p className="text-sm text-gray-400">{balance.network}</p>
                       <p className="text-xs text-gray-500 font-mono">
                         {balance.address}
                       </p>
                       {balance.isDefault && (
-                        <Badge className="mt-1 bg-green-900 text-green-400">Default</Badge>
+                        <Badge className="mt-1 bg-green-900 text-green-400">
+                          Default
+                        </Badge>
                       )}
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-xl font-bold text-white">
-                      {showBalances ? formatCurrency(balance.balance, balance.currency) : '••••••'}
+                      {showBalances
+                        ? formatCurrency(balance.balance, balance.currency)
+                        : "••••••"}
                     </p>
                     <p className="text-sm text-gray-400">
-                      {showBalances ? formatCurrency(balance.balance * 800, 'NGN') : '••••••'}
+                      {showBalances
+                        ? formatCurrency(balance.balance * 800, "NGN")
+                        : "••••••"}
                     </p>
                   </div>
                 </div>
@@ -394,13 +417,17 @@ const UnifiedWallet = () => {
         <CardContent>
           <div className="space-y-3">
             {transactions.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+              <div
+                key={tx.id}
+                className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg"
+              >
                 <div className="flex items-center">
                   <div className="p-2 bg-gray-600 rounded-full mr-3">
-                    {tx.type === 'fiat' ? 
-                      <CreditCard className="h-4 w-4 text-blue-400" /> : 
+                    {tx.type === "fiat" ? (
+                      <CreditCard className="h-4 w-4 text-blue-400" />
+                    ) : (
                       <Coins className="h-4 w-4 text-green-400" />
-                    }
+                    )}
                   </div>
                   <div>
                     <p className="font-semibold text-white">

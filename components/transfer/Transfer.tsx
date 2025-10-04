@@ -1,64 +1,66 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { ChevronRightIcon } from '@heroicons/react/24/solid';
-
-// Mock data for user accounts - we will replace this with real data later
-const userAccounts = [
-  {
-    id: 1,
-    name: 'Collins Coxton',
-    accountNumber: '9046144400',
-    balance: 25.56,
-    currency: 'NGN',
-    initials: 'CC',
-  },
-  {
-    id: 2,
-    name: 'Collins Coxton',
-    accountNumber: '8166029808',
-    balance: 42025.18,
-    currency: 'NGN',
-    initials: 'CC',
-  },
-  {
-    id: 3,
-    name: 'COXTONENTERPRISES',
-    accountNumber: '8127143469',
-    balance: 207338.07,
-    currency: 'NGN',
-    initials: 'CO',
-  },
-];
+import React, { useState } from "react";
+import { ChevronRightIcon } from "@heroicons/react/24/solid";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import type { FiatAccount } from "@/contexts/AuthContext";
 
 const Transfer = () => {
+  const { getFiatAccounts } = useAuth();
+  const [accounts, setAccounts] = useState<FiatAccount[]>(getFiatAccounts());
   const [step, setStep] = useState(1);
-  const [recipientAccountNumber, setRecipientAccountNumber] = useState('');
-  const [recipientDetails, setRecipientDetails] = useState<{ name: string; bank: string } | null>(null);
-  const [amount, setAmount] = useState('');
-  const [pin, setPin] = useState('');
-  const [selectedAccount, setSelectedAccount] = useState(userAccounts[0]);
+  const [recipientAccountNumber, setRecipientAccountNumber] = useState("");
+  const [recipientDetails, setRecipientDetails] = useState<{
+    name: string;
+    bank: string;
+  } | null>(null);
+  const [amount, setAmount] = useState("");
+  const [pin, setPin] = useState("");
+  const [selectedAccount, setSelectedAccount] = useState<FiatAccount | null>(
+    null
+  );
   const [showAccountSelector, setShowAccountSelector] = useState(false);
 
-    const handleNext = () => {
-    // In a real app, you would fetch recipient details here.
+  // Set the first account as selected when accounts are loaded
+  React.useEffect(() => {
+    if (accounts && accounts.length > 0 && !selectedAccount) {
+      setSelectedAccount(accounts[0]);
+    }
+  }, [accounts, selectedAccount]);
+
+  const handleNext = () => {
+    // I would fetch recipient details here.
     // For now, we'll use mock data.
-    if (recipientAccountNumber === '9046144400') {
+    if (recipientAccountNumber === "9046144400") {
       setRecipientDetails({
-        name: 'COLLINS ADAMS CAXTON',
-        bank: 'OPay',
+        name: "COLLINS ADAMS CAXTON",
+        bank: "OPay",
       });
       setStep(2);
     } else {
       // Handle error: recipient not found
-      alert('Recipient not found');
+      alert("Recipient not found");
     }
   };
 
-  const handleAccountSelect = (account: typeof userAccounts[0]) => {
+  const handleAccountSelect = (account: FiatAccount) => {
     setSelectedAccount(account);
     setShowAccountSelector(false);
   };
+
+  if (!selectedAccount) {
+    return <div className="text-white">Loading...</div>;
+  }
 
   return (
     <div className="text-white">
@@ -66,8 +68,10 @@ const Transfer = () => {
       {step === 1 && (
         <div className="space-y-6">
           <div>
-            <label className="text-sm font-medium text-gray-400">Paying from</label>
-            <div 
+            <label className="text-sm font-medium text-gray-400">
+              Paying from
+            </label>
+            <div
               className="mt-2 flex items-center justify-between p-3 bg-gray-700 rounded-lg cursor-pointer"
               onClick={() => setShowAccountSelector(true)}
             >
@@ -76,9 +80,17 @@ const Transfer = () => {
                   {selectedAccount.initials}
                 </div>
                 <div className="ml-3">
-                  <p className="font-semibold">{selectedAccount.name} • {selectedAccount.accountNumber}</p>
+                  <p className="font-semibold">
+                    {selectedAccount.name} • {selectedAccount.accountNumber}
+                  </p>
                   <p className="text-sm text-gray-400">
-                    {new Intl.NumberFormat('en-NG', { style: 'currency', currency: selectedAccount.currency }).format(selectedAccount.balance)}
+                    {new Intl.NumberFormat("en-NG", {
+                      style: "currency",
+                      currency: selectedAccount.currency,
+                    }).format(selectedAccount.balance)}
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    {selectedAccount.bankName}
                   </p>
                 </div>
               </div>
@@ -87,7 +99,12 @@ const Transfer = () => {
           </div>
 
           <div>
-            <label htmlFor="accountNumber" className="text-sm font-medium text-gray-400">Enter receiver's account number</label>
+            <label
+              htmlFor="accountNumber"
+              className="text-sm font-medium text-gray-400"
+            >
+              Enter receiver's account number
+            </label>
             <input
               type="text"
               id="accountNumber"
@@ -97,11 +114,11 @@ const Transfer = () => {
               className="mt-2 w-full p-4 bg-gray-700 rounded-lg border border-gray-600 focus:ring-purple-500 focus:border-purple-500"
             />
           </div>
-          
+
           {/* We will add the recent/saved accounts list here in a future step */}
 
-          <button 
-            onClick={handleNext} 
+          <button
+            onClick={handleNext}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300"
           >
             Next
@@ -109,7 +126,7 @@ const Transfer = () => {
         </div>
       )}
 
-            {/* Step 2: Confirm Recipient */}
+      {/* Step 2: Confirm Recipient */}
       {step === 2 && recipientDetails && (
         <div className="text-center space-y-6">
           <div className="flex flex-col items-center">
@@ -118,16 +135,18 @@ const Transfer = () => {
             </div>
             <p className="mt-4 text-sm text-gray-400">Sending money to</p>
             <p className="text-xl font-bold">{recipientDetails.name}</p>
-            <p className="text-sm text-gray-400">{recipientDetails.bank} • {recipientAccountNumber}</p>
+            <p className="text-sm text-gray-400">
+              {recipientDetails.bank} • {recipientAccountNumber}
+            </p>
           </div>
-          <button 
-            onClick={() => setStep(3)} 
+          <button
+            onClick={() => setStep(3)}
             className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-4 rounded-lg transition duration-300"
           >
             Confirm Recipient
           </button>
-          <button 
-            onClick={() => setStep(1)} 
+          <button
+            onClick={() => setStep(1)}
             className="w-full text-gray-400 hover:text-white transition duration-300"
           >
             Cancel
@@ -139,7 +158,12 @@ const Transfer = () => {
       {step === 3 && (
         <div className="space-y-6">
           <div>
-            <label htmlFor="amount" className="text-sm font-medium text-gray-400">Amount</label>
+            <label
+              htmlFor="amount"
+              className="text-sm font-medium text-gray-400"
+            >
+              Amount
+            </label>
             <input
               type="number"
               id="amount"
@@ -150,7 +174,9 @@ const Transfer = () => {
             />
           </div>
           <div>
-            <label htmlFor="pin" className="text-sm font-medium text-gray-400">Enter Payment PIN</label>
+            <label htmlFor="pin" className="text-sm font-medium text-gray-400">
+              Enter Payment PIN
+            </label>
             <input
               type="password"
               id="pin"
@@ -161,7 +187,7 @@ const Transfer = () => {
               className="mt-2 w-full p-4 bg-gray-700 rounded-lg border border-gray-600 focus:ring-purple-500 focus:border-purple-500 text-center tracking-[1em]"
             />
           </div>
-          <button 
+          <button
             // onClick={handleTransfer} // We will implement this later
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300"
           >
@@ -170,16 +196,20 @@ const Transfer = () => {
         </div>
       )}
 
-
-      {/* Account Selector Modal/Overlay */}
-      {showAccountSelector && (
-        <div className="absolute inset-0 bg-gray-900 bg-opacity-95 p-6 rounded-lg flex flex-col">
-          <h3 className="text-xl font-bold mb-4">Change payment method</h3>
-          <div className="flex-grow space-y-3 overflow-y-auto">
-            {userAccounts.map((account) => (
-              <div 
-                key={account.id} 
-                className="flex items-center justify-between p-3 bg-gray-800 rounded-lg cursor-pointer"
+      {/* Account Selector Modal */}
+      <Dialog open={showAccountSelector} onOpenChange={setShowAccountSelector}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Change payment method</DialogTitle>
+            <DialogDescription>
+              Select the account you want to transfer from
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col space-y-3 max-h-[60vh] overflow-y-auto">
+            {accounts.map((account: FiatAccount) => (
+              <div
+                key={account.id}
+                className="flex items-center justify-between p-3 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
                 onClick={() => handleAccountSelect(account)}
               >
                 <div className="flex items-center">
@@ -187,30 +217,44 @@ const Transfer = () => {
                     {account.initials}
                   </div>
                   <div className="ml-3">
-                    <p className="font-semibold">{account.name} • {account.accountNumber}</p>
+                    <p className="font-semibold">
+                      {account.name} • {account.accountNumber}
+                    </p>
                     <p className="text-sm text-gray-400">
-                      {new Intl.NumberFormat('en-NG', { style: 'currency', currency: account.currency }).format(account.balance)}
+                      {new Intl.NumberFormat("en-NG", {
+                        style: "currency",
+                        currency: account.currency,
+                      }).format(account.balance)}
+                    </p>
+                    <p className="text-sm text-gray-400">
+                      {selectedAccount.bankName}
                     </p>
                   </div>
                 </div>
-                <input 
-                  type="radio" 
-                  name="account" 
-                  checked={selectedAccount.id === account.id}
-                  readOnly
-                  className="form-radio h-5 w-5 text-yellow-500 bg-gray-700 border-gray-600 focus:ring-yellow-600"
-                />
+                <RadioGroup
+                  value={selectedAccount.id}
+                  onValueChange={(value) => {
+                    const account = accounts.find(
+                      (a: FiatAccount) => a.id === value
+                    );
+                    if (account) handleAccountSelect(account);
+                  }}
+                >
+                  <RadioGroupItem value={account.id} />
+                </RadioGroup>
               </div>
             ))}
           </div>
-          <button 
-            onClick={() => setShowAccountSelector(false)} 
-            className="mt-4 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-4 rounded-lg transition duration-300"
-          >
-            Proceed
-          </button>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              onClick={() => setShowAccountSelector(false)}
+              className="w-full"
+            >
+              Proceed
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

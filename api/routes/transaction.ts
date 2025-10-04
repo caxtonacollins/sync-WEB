@@ -1,24 +1,39 @@
 import axios from "axios";
+interface TransactionMetadata {
+  provider?: string;
+  description?: string;
+  paymentMethod?: string;
+  txHash?: string;
+  network?: string;
+}
 
-export const getUserSwapOrders = async (userId: string, token: string) => {
-  const response = await axios.get(
-    `${process.env.BACKEND_URL}/user/${userId}/swap-orders`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-  return response.data;
-};
+interface TransactionResponse {
+  id: string;
+  userId: string;
+  type: string;
+  status: string;
+  amount: number;
+  currency: string;
+  fee: number;
+  netAmount: number;
+  reference: string;
+  metadata: TransactionMetadata;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  fiatAccountId: string | null;
+  cryptoWalletId: string | null;
+  swapOrderId: string | null;
+}
 
-export const getTxByUser = async (userId: string, token: string) => {
-  const response = await axios.get(
-    `${process.env.BACKEND_URL}/tx/user/${userId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-  return response.data;
-};
+export interface TransactionListResponse {
+  data: TransactionResponse[];
+  meta: {
+    page: string;
+    limit: string;
+    total: number;
+  };
+}
 
 export const getAllTransactions = async (
   token: string,
@@ -29,12 +44,43 @@ export const getAllTransactions = async (
     currency?: string;
     page?: number;
     limit?: number;
+    fromDate?: string;
+    toDate?: string;
   } = {}
 ) => {
   const response = await axios.get(`${process.env.BACKEND_URL}/tx`, {
     headers: { Authorization: `Bearer ${token}` },
-    params, // axios will serialize into ?key=value&...
+    params,
   });
+  return response.data;
+};
+
+export const getAllUserTransactions = async (
+  token: string,
+  params: {
+    userId?: string;
+    status?: string;
+    type?: string;
+    currency?: string;
+    page?: number;
+    limit?: number;
+    fromDate?: string;
+    toDate?: string;
+  } = {}
+): Promise<TransactionListResponse> => {
+  if (!params.userId) {
+    throw new Error("userId is required");
+  }
+
+  const { userId, ...queryParams } = params;
+
+  const response = await axios.get<TransactionListResponse>(
+    `${process.env.BACKEND_URL}/tx/user/${userId}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      params: queryParams,
+    }
+  );
   return response.data;
 };
 

@@ -5,14 +5,18 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LoginResponse } from "@/api/server-calls";
 import { loginApi } from "@/api/routes/auth";
-import { getUserById } from "@/api/routes/user";
+import { getDashboardData, getUserById } from "@/api/routes/user";
+import { get } from "http";
 
-interface FiatAccount {
+export interface FiatAccount {
   id: string;
   userId: string;
   provider: string;
   accountNumber: string;
   accountName: string;
+  name: string; // For UI display
+  initials: string; // Computed from accountName
+  balance: number; // Current balance
   bankName: string;
   bankCode: string;
   currency: string;
@@ -49,12 +53,10 @@ interface CryptoWallet {
 }
 
 interface Transaction {
-  // Add transaction fields when needed
   id: string;
 }
 
 interface SwapOrder {
-  // Add swap order fields when needed
   id: string;
 }
 
@@ -119,6 +121,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [userDetails, setUserDetails] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -178,6 +181,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ refresh_token: storedRefreshToken }),
       });
 
+      await fetchUserDetails();
+
       if (!response.ok) {
         throw new Error("Token refresh failed");
       }
@@ -210,6 +215,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userData);
       localStorage.setItem("token", existingToken);
       localStorage.setItem("refresh_token", refreshToken);
+      await fetchUserDetails();
+
       router.push("/dashboard");
       return true;
     } catch (error) {
@@ -253,6 +260,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setToken(newToken);
       setUser(newUser as User);
+
+      await fetchUserDetails();
 
       if (newToken && newUser) {
         router.push("/dashboard");
@@ -305,26 +314,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/user/${user.id}?fiatAccounts=true&cryptoWallets=true&transactions=true&swapOrders=true`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const data = await getDashboardData(user.id, token);
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch user details");
-      }
-
-      const data = await response.json();
       if (!data.user) {
         throw new Error("No user data received");
       }
 
-      localStorage.setItem("user", JSON.stringify(data.user));
-      setUser(data.user);
+      console.log("Fetched user details:", data.user);
+      setUserDetails(data.user);
     } catch (error) {
       console.error("Failed to fetch user details:", error);
       throw error;
@@ -332,7 +329,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getFiatAccounts = () => {
-    return user?.fiatAccounts || [];
+    return (userDetails?.fiatAccounts || []).map((account) => ({
+      ...account,
+      name: account.accountName,
+      balance: account.balance,
+      bank: account.bankName,
+      initials: account.accountName
+        .split(" ")
+        .slice(0, 2)
+        .map((word) => word[0])
+        .join("")
+        .toUpperCase(),
+    }));
   };
 
   const getCryptoWallets = () => {

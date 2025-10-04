@@ -1,10 +1,28 @@
+export interface TransactionMetadata {
+  provider?: string;
+  description?: string;
+  paymentMethod?: string;
+  txHash?: string;
+  network?: string;
+}
+
 export interface Transaction {
   id: string;
-  amount: number;
+  userId: string;
   type: string;
-  createdAt: string;
   status: string;
+  amount: number;
   currency: string;
+  fee: number;
+  netAmount: number;
+  reference: string;
+  metadata: TransactionMetadata;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  fiatAccountId: string | null;
+  cryptoWalletId: string | null;
+  swapOrderId: string | null;
 }
 
 export interface SwapOrder {

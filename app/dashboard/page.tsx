@@ -5,15 +5,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Layout from "@/components/Layout";
-import { getDashboardData } from "@/api/mock/dashboard";
 import { Transaction } from "@/data/types";
 import RecentTransactions from "@/components/RecentTransactions";
 import DashboardActions from '@/components/DashboardActions';
 import HybridPaymentDashboard from '@/components/HybridPaymentDashboard';
 import UnifiedWallet from '@/components/UnifiedWallet';
+import { getDashboardData } from "@/api/routes/user";
 
 export default function DashboardOverviewPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { addToast } = useToast();
   const [transactions, setTransactions] = useState<Transaction[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,10 +25,11 @@ export default function DashboardOverviewPage() {
   }, [user]);
 
   const fetchDashboardData = async () => {
-    if (!user?.id) return;
+    if (!user?.id || !token) return;
+
     try {
       setLoading(true);
-      const data = await getDashboardData(user.id);
+      const data = await getDashboardData(user.id, token);
       setTransactions(data.transactions);
     } catch (error) {
       console.error("Dashboard data error:", error);
@@ -67,9 +68,10 @@ export default function DashboardOverviewPage() {
           {/* Hybrid Payment System Overview */}
           <HybridPaymentDashboard />
 
-          <UnifiedWallet />
-
           <DashboardActions />
+
+          {/* <UnifiedWallet /> */}
+
         </div>
       </Layout>
     </ProtectedRoute>
