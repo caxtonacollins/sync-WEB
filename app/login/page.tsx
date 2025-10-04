@@ -9,9 +9,7 @@ import Link from "next/link";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState(
-    () => localStorage.getItem("lastEmail") || ""
-  );
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,6 +18,9 @@ export default function LoginPage() {
   const [isReturningUser, setIsReturningUser] = useState(false);
 
   useEffect(() => {
+    // Only access localStorage on the client side
+    if (typeof window === 'undefined') return;
+    
     // Check for existing token and stored email
     const token = localStorage.getItem("token");
     const storedEmail = localStorage.getItem("lastEmail");
@@ -35,6 +36,8 @@ export default function LoginPage() {
   }, []);
 
   const handleTokenLogin = async (token: string) => {
+    if (typeof window === 'undefined') return;
+    
     try {
       const refreshToken = localStorage.getItem("refresh_token");
       if (!refreshToken) {
