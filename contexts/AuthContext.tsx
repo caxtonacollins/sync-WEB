@@ -217,7 +217,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("refresh_token", refreshToken);
       await fetchUserDetails();
 
-      router.push("/dashboard");
+      // Redirect based on user role
+      if (userData.role === "ADMIN") {
+        router.push("/admin");
+      } else {
+        router.push("/dashboard");
+      }
       return true;
     } catch (error) {
       console.error("Token login failed:", error);
@@ -264,7 +269,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetchUserDetails();
 
       if (newToken && newUser) {
-        router.push("/dashboard");
+        // Redirect based on user role
+        if (newUser.role === "ADMIN") {
+          router.push("/admin");
+        } else {
+          router.push("/dashboard");
+        }
       }
 
       return {
@@ -295,6 +305,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+
       if (!storedUser.id) {
         throw new Error("No user ID found");
       }
@@ -310,7 +321,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserDetails = async () => {
     if (!user?.id || !token) {
-      throw new Error("No user ID or token available");
+      // throw new Error("No user ID or token available");
+      console.log("No user ID or token available");
+      return;
     }
 
     try {

@@ -93,16 +93,11 @@ export class SyncPayTokenSystem {
     this.initializeFeeDiscounts();
   }
 
-  /**
-   * Get user's XPAY token balance
-   */
+ 
   getUserBalance(userId: string): UserTokenBalance | null {
     return this.userBalances.find(balance => balance.userId === userId) || null;
   }
 
-  /**
-   * Initialize user's XPAY balance
-   */
   initializeUserBalance(userId: string, initialBalance: number = 0): UserTokenBalance {
     const existingBalance = this.getUserBalance(userId);
     if (existingBalance) {
@@ -122,15 +117,12 @@ export class SyncPayTokenSystem {
     return balance;
   }
 
-  /**
-   * Transfer XPAY tokens between users
-   */
   async transferTokens(fromUserId: string, toUserId: string, amount: number): Promise<boolean> {
     const fromBalance = this.getUserBalance(fromUserId);
     const toBalance = this.getUserBalance(toUserId);
 
     if (!fromBalance || fromBalance.balance < amount) {
-      throw new Error('Insufficient XPAY balance');
+      throw new Error('Insufficient Sync balance');
     }
 
     // Update sender balance
@@ -148,9 +140,6 @@ export class SyncPayTokenSystem {
     return true;
   }
 
-  /**
-   * Stake XPAY tokens
-   */
   async stakeTokens(
     userId: string,
     poolId: string,
@@ -160,7 +149,7 @@ export class SyncPayTokenSystem {
     const pool = this.stakingPools.find(p => p.id === poolId);
 
     if (!userBalance || userBalance.balance < amount) {
-      throw new Error('Insufficient XPAY balance');
+      throw new Error('Insufficient Sync balance');
     }
 
     if (!pool || !pool.isActive) {
@@ -168,7 +157,7 @@ export class SyncPayTokenSystem {
     }
 
     if (amount < pool.minimumStake) {
-      throw new Error(`Minimum stake amount is ${pool.minimumStake} XPAY`);
+      throw new Error(`Minimum stake amount is ${pool.minimumStake} Sync`);
     }
 
     // Create staking position
@@ -198,9 +187,6 @@ export class SyncPayTokenSystem {
     return position;
   }
 
-  /**
-   * Calculate staking rewards
-   */
   calculateStakingRewards(positionId: string): number {
     const position = this.stakingPositions.find(p => p.id === positionId);
     if (!position || !position.isActive) return 0;
@@ -215,9 +201,6 @@ export class SyncPayTokenSystem {
     return Math.max(0, rewards);
   }
 
-  /**
-   * Claim staking rewards
-   */
   async claimRewards(positionId: string): Promise<number> {
     const position = this.stakingPositions.find(p => p.id === positionId);
     if (!position || !position.isActive) {
@@ -245,9 +228,6 @@ export class SyncPayTokenSystem {
     return rewards;
   }
 
-  /**
-   * Get fee discount based on XPAY holdings
-   */
   getFeeDiscount(userId: string): FeeDiscount | null {
     const userBalance = this.getUserBalance(userId);
     if (!userBalance) return null;
@@ -262,9 +242,6 @@ export class SyncPayTokenSystem {
     return availableTiers[0] || null;
   }
 
-  /**
-   * Apply fee discount to a transaction
-   */
   applyFeeDiscount(originalFee: number, userId: string): number {
     const discount = this.getFeeDiscount(userId);
     if (!discount) return originalFee;
@@ -273,9 +250,6 @@ export class SyncPayTokenSystem {
     return Math.max(0, originalFee - discountAmount);
   }
 
-  /**
-   * Create a governance proposal
-   */
   async createProposal(
     proposer: string,
     title: string,
@@ -300,9 +274,6 @@ export class SyncPayTokenSystem {
     return proposal;
   }
 
-  /**
-   * Vote on a governance proposal
-   */
   async voteOnProposal(
     proposalId: string,
     userId: string,
@@ -327,9 +298,6 @@ export class SyncPayTokenSystem {
     return true;
   }
 
-  /**
-   * Initialize staking pools
-   */
   private initializeStakingPools(): void {
     this.stakingPools = [
       {
@@ -365,9 +333,6 @@ export class SyncPayTokenSystem {
     ];
   }
 
-  /**
-   * Initialize fee discount tiers
-   */
   private initializeFeeDiscounts(): void {
     this.feeDiscounts = [
       {

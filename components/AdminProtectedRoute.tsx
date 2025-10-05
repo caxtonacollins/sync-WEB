@@ -9,12 +9,12 @@ export default function AdminProtectedRoute({ children }: { children: React.Reac
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && user?.role !== 'admin') {
+    if (!isLoading && user?.role !== 'ADMIN') {
       router.push('/dashboard');
     }
   }, [user, isLoading, router]);
 
-  if (isLoading || user?.role !== 'admin') {
+  if (isLoading || user?.role !== 'ADMIN') {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="loading-spinner h-12 w-12"></div>

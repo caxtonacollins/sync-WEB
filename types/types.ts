@@ -49,7 +49,7 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  role: "user" | "admin";
+  role: "USER" | "ADMIN";
   status: "ACTIVE" | "SUSPENDED" | "CLOSED" | "RESTRICTED";
   phoneNumber?: string;
   address?: string;
