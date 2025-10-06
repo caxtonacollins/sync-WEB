@@ -140,9 +140,6 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
       if (!user || !token) {
         throw new Error("User or token not found");
       }
-      console.log("user", user);
-      console.log("token", token);
-      console.log("pinForm", pinForm);
       await setPin(user.id, pinForm.pin, token);
       setPinForm({ pin: "", confirm: "", oldPin: "", newPin: "", newConfirm: "" });
       onUpdate({ paymentPinSet: true });

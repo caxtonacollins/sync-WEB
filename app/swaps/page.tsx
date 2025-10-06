@@ -29,12 +29,14 @@ import {
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { SwapTableSkeleton } from "@/components/skeletons/SwapTableSkeleton";
+import BridgeLiquidityModal from "@/components/modals/BridgeLiquidityModal";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 export default function SwapsPage() {
   const { token, user } = useAuth();
   const { addToast } = useToast();
+  const [showBridgeModal, setShowBridgeModal] = useState(false);
   const [swapOrders, setSwapOrders] = useState<SwapOrderListResponse>({
     data: [],
     page: 1,
@@ -104,6 +106,10 @@ export default function SwapsPage() {
     }
   };
 
+  const toggleBridgeInterface = () => {
+    setShowBridgeModal(true);
+  };
+
   return (
     <ProtectedRoute>
       <Layout>
@@ -114,12 +120,14 @@ export default function SwapsPage() {
                 <ArrowPathIcon className="h-8 w-8 mr-3 text-cyan-400" />
                 Swap History
               </h1>
-              <Link href="/swap/new">
-                <Button>
+                <Button
+                  size="sm"
+                  className="bg-purple-800 hover:bg-purple-700"
+                  onClick={toggleBridgeInterface}
+                >
                   <PlusIcon className="h-5 w-5 mr-2" />
                   New Swap
                 </Button>
-              </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -368,6 +376,10 @@ export default function SwapsPage() {
               </div>
             </div>
           )}
+             <BridgeLiquidityModal 
+        isOpen={showBridgeModal} 
+        onClose={() => setShowBridgeModal(false)} 
+      />
         </div>
       </Layout>
     </ProtectedRoute>

@@ -15,8 +15,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { paymentProcessor } from '@/lib/payment-processor';
-// TODO: Import actual SYNC token system when implemented
-// import { syncTokenSystem } from '@/lib/sync-token';
 import { liquidityBridge } from '@/lib/liquidity-bridge';
 import TransferModal from '@/components/transfer/TransferModal';
 import BridgeLiquidityModal from '@/components/modals/BridgeLiquidityModal';
@@ -155,12 +153,12 @@ export default function HybridPaymentDashboard() {
           </CardContent>
         </Card>
 
-        {/* Crypto Wallet */}
+        {/* Swap/Bridge */}
         <Card className="bg-gradient-to-br from-purple-900/20 to-purple-800/20 border-purple-700">
           <CardHeader className="pb-2">
             <CardTitle className="text-purple-400 flex items-center">
               <CurrencyDollarIcon className="h-5 w-5 mr-2" />
-              Crypto Reserve
+              Swap/Bridge
             </CardTitle>
           </CardHeader>
           <CardContent>

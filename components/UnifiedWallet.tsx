@@ -61,6 +61,10 @@ const UnifiedWallet = () => {
     if (user) {
       loadWalletData();
       loadTransactions();
+      const id = setInterval(() => {
+        loadWalletData();
+      }, 15000);
+      return () => clearInterval(id);
     }
   }, [user]);
 
