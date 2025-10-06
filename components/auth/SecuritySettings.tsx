@@ -10,6 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { MfaSetup } from "./MfaSetup";
 import { PasskeyLogin } from "./PasskeyLogin";
 import { BiometricAuth } from "./BiometricAuth";
+import { useAuth } from "@/contexts/AuthContext";
+import axios from "axios";
+import { setPin, changePin } from "@/api/routes/security";
 
 interface SecuritySettingsProps {
   onUpdate: (settings: any) => void;
@@ -34,6 +37,8 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
   const [error, setError] = useState<string | null>(null);
   const [activeDialog, setActiveDialog] = useState<"mfa" | "passkey" | "biometric" | "password" | null>(null);
   const [newPassword, setNewPassword] = useState({ current: "", new: "", confirm: "" });
+  const { user, token } = useAuth();
+  const [pinForm, setPinForm] = useState({ pin: "", confirm: "", oldPin: "", newPin: "", newConfirm: "" });
 
   useEffect(() => {
     fetchSecurityStatus();
@@ -42,20 +47,15 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
   const fetchSecurityStatus = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/auth/security/status", {
-        credentials: "include",
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to fetch security status");
-      }
-
-      const status = await response.json();
-      setStatus(status);
-    } catch (err) {
-      const error = err as Error;
-      setError(error.message);
-      onError(error);
+      const { data } = await axios.get(
+        `${process.env.BACKEND_URL}/auth/security/status`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setStatus(data);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err.message || "Failed to fetch security status";
+      setError(message);
+      onError(new Error(message));
     } finally {
       setIsLoading(false);
     }
@@ -88,27 +88,22 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
         throw new Error("New passwords don't match");
       }
 
-      const response = await fetch("/api/auth/security/password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
+      await axios.post(
+        `${process.env.BACKEND_URL}/auth/security/password`,
+        {
           currentPassword: newPassword.current,
           newPassword: newPassword.new,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to change password");
-      }
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       setActiveDialog(null);
       setNewPassword({ current: "", new: "", confirm: "" });
       await fetchSecurityStatus();
-    } catch (err) {
-      const error = err as Error;
-      setError(error.message);
-      onError(error);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err.message || "Failed to change password";
+      setError(message);
+      onError(new Error(message));
     } finally {
       setIsLoading(false);
     }
@@ -119,20 +114,61 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/auth/security/${type}/disable`, {
-        method: "POST",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to disable ${type}`);
-      }
+      await axios.post(
+        `${process.env.BACKEND_URL}/auth/security/${type}/disable`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       await fetchSecurityStatus();
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err.message || `Failed to disable ${type}`;
+      setError(message);
+      onError(new Error(message));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSetPin = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      if (pinForm.pin.length !== 4 || pinForm.pin !== pinForm.confirm) {
+        throw new Error("PINs must match and be 4 digits");
+      }
+      if (!user || !token) {
+        throw new Error("User or token not found");
+      }
+      console.log("user", user);
+      console.log("token", token);
+      console.log("pinForm", pinForm);
+      await setPin(user.id, pinForm.pin, token);
+      setPinForm({ pin: "", confirm: "", oldPin: "", newPin: "", newConfirm: "" });
+      onUpdate({ paymentPinSet: true });
     } catch (err) {
-      const error = err as Error;
-      setError(error.message);
-      onError(error);
+      const e = err as Error;
+      setError(e.message);
+      onError(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChangePin = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      if (pinForm.newPin.length !== 4 || pinForm.newPin !== pinForm.newConfirm) {
+        throw new Error("New PINs must match and be 4 digits");
+      }
+      await changePin(user!.id, pinForm.oldPin, pinForm.newPin, token as string);
+      setPinForm({ pin: "", confirm: "", oldPin: "", newPin: "", newConfirm: "" });
+      onUpdate({ paymentPinChanged: true });
+    } catch (err) {
+      const e = err as Error;
+      setError(e.message);
+      onError(e);
     } finally {
       setIsLoading(false);
     }
@@ -231,6 +267,65 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
           <Button onClick={() => setActiveDialog("password")}>
             Change Password
           </Button>
+        </div>
+      </Card>
+
+      {/* Payment PIN */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-medium">Payment PIN</h3>
+            <p className="text-sm text-gray-500">Set or change your 4-digit payment PIN</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Set PIN</label>
+            <div className="flex gap-2">
+              <Input
+                type="password"
+                placeholder="••••"
+                maxLength={4}
+                value={pinForm.pin}
+                onChange={(e) => setPinForm((p) => ({ ...p, pin: e.target.value.replace(/\D/g, "") }))}
+              />
+              <Input
+                type="password"
+                placeholder="Confirm"
+                maxLength={4}
+                value={pinForm.confirm}
+                onChange={(e) => setPinForm((p) => ({ ...p, confirm: e.target.value.replace(/\D/g, "") }))}
+              />
+              <Button onClick={handleSetPin} disabled={!token || !user || isLoading}>Set</Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Change PIN</label>
+            <div className="flex gap-2">
+              <Input
+                type="password"
+                placeholder="Old"
+                maxLength={4}
+                value={pinForm.oldPin}
+                onChange={(e) => setPinForm((p) => ({ ...p, oldPin: e.target.value.replace(/\D/g, "") }))}
+              />
+              <Input
+                type="password"
+                placeholder="New"
+                maxLength={4}
+                value={pinForm.newPin}
+                onChange={(e) => setPinForm((p) => ({ ...p, newPin: e.target.value.replace(/\D/g, "") }))}
+              />
+              <Input
+                type="password"
+                placeholder="Confirm"
+                maxLength={4}
+                value={pinForm.newConfirm}
+                onChange={(e) => setPinForm((p) => ({ ...p, newConfirm: e.target.value.replace(/\D/g, "") }))}
+              />
+              <Button onClick={handleChangePin} disabled={!token || !user || isLoading}>Change</Button>
+            </div>
+          </div>
         </div>
       </Card>
 

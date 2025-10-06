@@ -139,8 +139,8 @@ export const resolveAccountNumber = async (accountNumber: string, token: string)
       }
     );
     return data;
-  } catch (error) {
-    console.error("Failed to resolve account number:", error);
+  } catch (error: any) {
+    console.error("Failed to resolve account number:", error.message);
     throw new Error("Failed to resolve account number");
   }
 };

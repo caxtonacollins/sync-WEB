@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { ChevronRightIcon } from "@heroicons/react/24/solid";
 import {
   Dialog,
@@ -13,10 +13,12 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { resolveAccountNumber as resolveAccountNumberApi } from "@/api/routes/user";
+import { verifyPin as verifyPaymentPinApi } from "../../api/routes/security";
 import type { FiatAccount } from "@/contexts/AuthContext";
 
 const Transfer = () => {
-  const { getFiatAccounts } = useAuth();
+  const { getFiatAccounts, token } = useAuth();
   const [accounts] = useState<FiatAccount[]>(getFiatAccounts());
   const [step, setStep] = useState(1);
   const [recipientAccountNumber, setRecipientAccountNumber] = useState("");
@@ -24,6 +26,22 @@ const Transfer = () => {
     name: string;
     bank: string;
   } | null>(null);
+  const [availableBanks, setAvailableBanks] = useState<
+    { name: string; code: string; isSyncPayment?: boolean }[]
+  >([]);
+  const [syncAccount, setSyncAccount] = useState<
+    | {
+        isSyncPayment: boolean;
+        accountNumber: string;
+        accountName: string;
+        bankName: string;
+        bankCode: string;
+      }
+    | null
+  >(null);
+  const [resolving, setResolving] = useState(false);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+  const lastResolvedRef = useRef<string>("");
   const [amount, setAmount] = useState("");
   const [pin, setPin] = useState("");
   const [selectedAccount, setSelectedAccount] = useState<FiatAccount | null>(
@@ -38,6 +56,47 @@ const Transfer = () => {
     }
   }, [accounts, selectedAccount]);
 
+  // Auto-trigger resolve when account number reaches 10 digits
+  useEffect(() => {
+    const onlyDigits = recipientAccountNumber.replace(/\D/g, "");
+    if (onlyDigits.length === 10 && token && onlyDigits !== lastResolvedRef.current) {
+      (async () => {
+        try {
+          setResolving(true);
+          setResolveError(null);
+          setAvailableBanks([]);
+          setSyncAccount(null);
+          lastResolvedRef.current = onlyDigits;
+          const data = await resolveAccountNumberApi(onlyDigits, token as string);
+          const banks = Array.isArray(data?.banks) ? data.banks : [];
+          // Ensure SyncPayment stays on top if present
+          const orderedBanks = banks.sort((a: any, b: any) => {
+            const ai = a?.isSyncPayment ? -1 : 0;
+            const bi = b?.isSyncPayment ? -1 : 0;
+            return ai - bi;
+          });
+          setAvailableBanks(orderedBanks);
+          setSyncAccount(data?.syncAccount || null);
+        } catch (e: any) {
+          setResolveError("Failed to load banks. Try again.");
+        } finally {
+          setResolving(false);
+        }
+      })();
+    }
+  }, [recipientAccountNumber, token]);
+
+  const handleBankSelect = (bank: { name: string; code: string; isSyncPayment?: boolean }) => {
+    const name = bank?.isSyncPayment && syncAccount?.accountName
+      ? syncAccount.accountName
+      : "Recipient";
+    setRecipientDetails({
+      name,
+      bank: bank.name,
+    });
+    setStep(2);
+  };
+
   const handleNext = () => {
     // I would fetch recipient details here.
     // For now, we'll use mock data.
@@ -48,7 +107,6 @@ const Transfer = () => {
       });
       setStep(2);
     } else {
-      // Handle error: recipient not found
       alert("Recipient not found");
     }
   };
@@ -112,12 +170,61 @@ const Transfer = () => {
               id="accountNumber"
               placeholder="0000000000"
               value={recipientAccountNumber}
-              onChange={(e) => setRecipientAccountNumber(e.target.value)}
+              maxLength={10}
+              onChange={(e) => {
+                const digitsOnly = e.target.value.replace(/\D/g, "");
+                setRecipientAccountNumber(digitsOnly);
+                if (digitsOnly.length < 10) {
+                  setAvailableBanks([]);
+                  setSyncAccount(null);
+                  setResolveError(null);
+                  lastResolvedRef.current = "";
+                }
+              }}
               className="mt-2 w-full p-4 bg-gray-700 rounded-lg border border-gray-600 focus:ring-purple-500 focus:border-purple-500"
             />
           </div>
 
-          {/* We will add the recent/saved accounts list here in a future step */}
+          {/* Available Banks List (auto after 10 digits) */}
+          {recipientAccountNumber.length === 10 && (
+            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
+              {resolving && (
+                <div className="flex items-center justify-center py-4">
+                  <div className="loading-spinner h-6 w-6"></div>
+                </div>
+              )}
+              {resolveError && (
+                <div className="text-red-400 text-sm">{resolveError}</div>
+              )}
+              {!resolving && !resolveError && availableBanks.length > 0 && (
+                <div className="flex flex-col space-y-2">
+                  {availableBanks.map((bank) => (
+                    <div
+                      key={`${bank.code}-${bank.name}`}
+                      className="flex items-center justify-between p-3 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
+                      onClick={() => handleBankSelect(bank)}
+                    >
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center font-bold text-black">
+                          {bank.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className="ml-3">
+                          <p className="font-semibold flex items-center gap-2">
+                            {bank.name}
+                            {bank.isSyncPayment && (
+                              <span className="text-xs bg-yellow-500 text-black px-2 py-0.5 rounded">Preferred</span>
+                            )}
+                          </p>
+                          {/* Removed bank code from UI per request */}
+                        </div>
+                      </div>
+                      <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <button
             onClick={handleNext}
@@ -190,7 +297,18 @@ const Transfer = () => {
             />
           </div>
           <button
-            // onClick={handleTransfer} // We will implement this later
+            onClick={async () => {
+              try {
+                const ok = await verifyPaymentPinApi(selectedAccount.userId, pin, token as string);
+                if (!ok) {
+                  alert("Invalid PIN");
+                  return;
+                }
+                alert("PIN verified. Proceeding...");
+              } catch (err) {
+                alert("Unable to verify PIN. Please try again.");
+              }
+            }}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300"
           >
             Send Money
