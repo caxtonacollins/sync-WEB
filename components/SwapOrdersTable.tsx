@@ -145,10 +145,10 @@ export default function SwapOrdersTable({ userId }: SwapOrdersTableProps) {
         </tbody>
       </table>
 
-      {swapOrders && swapOrders.meta.total > 0 && (
+      {swapOrders && swapOrders.total > 0 && (
         <div className="mt-4 flex justify-between items-center">
           <div className="text-sm text-gray-400">
-            Total: {swapOrders.meta.total} orders
+            Total: {swapOrders.total} orders
           </div>
           <div className="flex gap-2">
             <button
@@ -159,14 +159,14 @@ export default function SwapOrdersTable({ userId }: SwapOrdersTableProps) {
               Previous
             </button>
             <span className="px-3 py-1 text-gray-300">
-              Page {currentPage} of{" "}
-              {Math.ceil(swapOrders.meta.total / parseInt(swapOrders.meta.limit))}
+              Page {currentPage} of {""}
+              {Math.ceil(swapOrders.total / swapOrders.limit)}
             </span>
             <button
               onClick={() => setCurrentPage((p) => p + 1)}
               disabled={
                 currentPage >=
-                Math.ceil(swapOrders.meta.total / parseInt(swapOrders.meta.limit))
+                Math.ceil(swapOrders.total / swapOrders.limit)
               }
               className="px-3 py-1 bg-gray-800 text-white rounded-lg disabled:opacity-50"
             >

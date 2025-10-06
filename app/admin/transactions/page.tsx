@@ -82,8 +82,9 @@ export default function TransactionManagementPage() {
     if (!token) return;
     try {
       setLoading(true);
-      const data = await getAllTransactions(token);
-      setTransactions(data);
+      const res = await getAllTransactions(token);
+      const txData = res.data || res
+      setTransactions(Array.isArray(txData) ? txData : txData.data || []);
     } catch (error) {
       addToast("Failed to fetch transactions", "error");
     } finally {

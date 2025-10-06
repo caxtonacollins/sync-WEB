@@ -48,3 +48,17 @@ export const disable2FA = async (token: string) => {
   );
   return response.data;
 };
+
+export const refreshTokenApi = async (refreshToken: string) => {
+  try {
+    const response = await axios.post(
+      `${process.env.BACKEND_URL}/auth/refresh`,
+      { refresh_token: refreshToken },
+      { headers: { "Content-Type": "application/json" } }
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<{ message?: string }>;
+    throw new Error(error.response?.data?.message || error.message || "Token refresh failed");
+  }
+};

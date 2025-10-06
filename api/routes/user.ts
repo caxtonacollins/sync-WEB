@@ -37,7 +37,8 @@ export const getUserById = async (userId: string, token: string) => {
       headers: { Authorization: `Bearer ${token}` },
     }
   );
-  return response.data;
+  // Backend returns { user: {...} }, extract the user object
+  return response.data.user || response.data;
 };
 
 export const getUserByCryptoAddress = async (
@@ -65,7 +66,7 @@ export const getUserByEmail = async (email: string, token: string) => {
 
 export const updateUserProfile = async (
   userId: string,
-  profileData: User,
+  profileData: Partial<User>,
   token: string
 ) => {
   const response = await axios.patch(
@@ -124,5 +125,22 @@ export const getDashboardData = async (userId: string, token: string) => {
   } catch (error) {
     console.error("Failed to fetch dashboard data:", error);
     throw new Error("Failed to fetch dashboard data");
+  }
+};
+
+export const resolveAccountNumber = async (accountNumber: string, token: string) => {
+  try {
+    const { data } = await axios.get(
+      `${process.env.BACKEND_URL}/user/resolve/account/${accountNumber}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return data;
+  } catch (error) {
+    console.error("Failed to resolve account number:", error);
+    throw new Error("Failed to resolve account number");
   }
 };

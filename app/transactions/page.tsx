@@ -6,13 +6,13 @@ import { useToast } from "@/contexts/ToastContext";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { TrendingUpIcon } from "lucide-react";
-import { getAllUserTransactions } from "@/api/routes/transaction";
+import { getAllUserTransactions, TransactionListResponse } from "@/api/routes/transaction";
 import { TransactionTable } from "@/components/TransactionTable";
 import { TransactionTableSkeleton } from "@/components/skeletons/TransactionTableSkeleton";
 import { Transaction } from "@/types/types";
 
 export default function TransactionsPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { addToast } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,26 +29,25 @@ export default function TransactionsPage() {
   });
 
   useEffect(() => {
-    if (token) {
+    if (token && user?.id) {
       fetchTransactions();
     }
-  }, [token, filters]);
+  }, [token, user?.id]);
+
+  useEffect(() => {
+    if (token && user?.id) {
+      fetchTransactions();
+    }
+  }, [token, user?.id, filters]);
 
   const fetchTransactions = async () => {
-    if (!token) return;
-
-    const user = localStorage.getItem("user");
-    const userId = user ? JSON.parse(user).id : null;
-
-    if (!userId) {
-      addToast("User ID not found", "error");
-      return;
-    }
+    if (!token || !user?.id) return;
 
     try {
       setLoading(true);
-      const { data: responseData } = await getAllUserTransactions(token, {
-        userId,
+
+      const response: TransactionListResponse = await getAllUserTransactions(token, {
+        userId: user.id,
         status: filters.status !== "all" ? filters.status : undefined,
         type: filters.type !== "all" ? filters.type : undefined,
         currency: filters.currency !== "all" ? filters.currency : undefined,
@@ -58,8 +57,8 @@ export default function TransactionsPage() {
         toDate: filters.toDate?.toISOString(),
       });
 
-      setTransactions(responseData);
-      setTotalTransactions(responseData.length);
+      setTransactions(response.data as unknown as Transaction[]);
+      setTotalTransactions(response.meta?.total || response.data.length);
     } catch (error: any) {
       addToast(error?.message || "Failed to fetch transactions", "error");
     } finally {

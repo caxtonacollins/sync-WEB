@@ -20,6 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { TransferProvider, useTransfer } from "@/contexts/TransferContext";
 import TransferModal from "@/components/transfer/TransferModal";
+import Image from "next/image";
 
 interface UserLayoutProps {
   children: React.ReactNode;
@@ -111,7 +112,7 @@ const AppLayout = ({ children }: UserLayoutProps) => {
   return (
     <div className="min-h-screen bg-gray-950">
       <TransferModal isOpen={isTransferModalOpen} onClose={closeTransferModal} />
-      
+
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -122,15 +123,19 @@ const AppLayout = ({ children }: UserLayoutProps) => {
 
       {/* Mobile sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:hidden ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="bg-gray-900 border-r border-gray-800 h-full">
           <div className="flex items-center justify-between p-4 border-b border-gray-800">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-              SyncPay
-            </h1>
+            <Image
+              src="/full-logo-transparent.png"
+              alt="Sync Logo"
+              width={140}
+              height={45}
+              className="w-auto h-auto"
+              priority
+            />
             <button
               onClick={() => setSidebarOpen(false)}
               className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
@@ -144,11 +149,10 @@ const AppLayout = ({ children }: UserLayoutProps) => {
                 key={item.name}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                  pathname === item.href
+                className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${pathname === item.href
                     ? "bg-purple-600 text-white shadow-lg shadow-purple-500/50"
                     : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                }`}
+                  }`}
               >
                 <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
                 <span className="truncate">{item.name}</span>
@@ -162,21 +166,25 @@ const AppLayout = ({ children }: UserLayoutProps) => {
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="bg-gray-900 border-r border-gray-800 flex min-h-0 flex-1 flex-col">
           <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
-            <div className="flex flex-shrink-0 items-center px-4 mb-6">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                SyncPay
-              </h1>
+            <div className="flex flex-shrink-0 items-center justify-center px-4 mb-6">
+              <Image
+                src="/full-logo-transparent.png"
+                alt="Sync Logo"
+                width={180}
+                height={60}
+                className="w-auto h-auto max-w-full"
+                priority
+              />
             </div>
             <nav className="mt-5 flex-1 space-y-1 px-3">
               {userNavigation.map((item) => (
                 <Link
-                  key={item.name}
+                  key={item.href}
                   href={item.href}
-                  className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                    pathname === item.href
+                  className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${pathname === item.href
                       ? "bg-purple-600 text-white shadow-lg shadow-purple-500/50"
                       : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                  }`}
+                    }`}
                 >
                   <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
                   <span className="truncate">{item.name}</span>
@@ -187,13 +195,11 @@ const AppLayout = ({ children }: UserLayoutProps) => {
         </div>
       </div>
 
-      {/* Main content */}
       <div className="lg:pl-64 flex flex-col flex-1">
         {/* Header */}
         <div
-          className={`sticky top-0 z-10 bg-gray-900/95 border-b border-gray-800 backdrop-blur-sm transition-transform duration-300 ${
-            isScrolled ? "-translate-y-full" : "translate-y-0 shadow-lg"
-          }`}
+          className={`sticky top-0 z-10 bg-gray-900/95 border-b border-gray-800 backdrop-blur-sm transition-transform duration-300 ${isScrolled ? "-translate-y-full" : "translate-y-0 shadow-lg"
+            }`}
         >
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
             <button

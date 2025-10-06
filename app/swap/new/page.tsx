@@ -20,7 +20,7 @@ interface Wallet {
 }
 
 export default function NewSwapPage() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const { addToast } = useToast()
   const [wallets, setWallets] = useState<Wallet[]>([])
   const [fromWallet, setFromWallet] = useState<string>("")
@@ -55,13 +55,10 @@ export default function NewSwapPage() {
   }, [fromAmount, rate])
 
   const fetchWallets = async () => {
-    if (!token) return;
+    if (!token || !user?.id) return;
     try {
       setLoading(true);
-      const userId = localStorage.getItem("userId") || ""
-      if (!userId) {
-        throw new Error("User not logged in");
-      };
+      const userId = user.id
       // Simulate API call with mock data
       await new Promise(resolve => setTimeout(resolve, 500));
       const mockData: Wallet[] = [

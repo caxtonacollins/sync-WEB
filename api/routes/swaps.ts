@@ -18,8 +18,8 @@ export interface SwapOrderResponse {
 
 export interface SwapOrderListResponse {
   data: SwapOrderResponse[];
-  page: string;
-  limit: string;
+  page: number;
+  limit: number;
   total: number;
 }
 
@@ -40,13 +40,12 @@ export const getUserSwapOrders = async (
     throw new Error("userId is required");
   }
 
-  const { userId, ...queryParams } = params;
-
   const response = await axios.get<SwapOrderListResponse>(
     `${process.env.BACKEND_URL}/swap-order`,
     {
       headers: { Authorization: `Bearer ${token}` },
-      params: queryParams,
+      // Include userId so backend filters by current user
+      params,
     }
   );
   return response.data;

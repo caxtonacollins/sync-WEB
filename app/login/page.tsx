@@ -13,47 +13,20 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login, loginWithToken } = useAuth();
+  const { login, lastEmail, token, clearAuthData, clearLastEmail } = useAuth();
   const { addToast } = useToast();
   const [isReturningUser, setIsReturningUser] = useState(false);
 
   useEffect(() => {
-    // Only access localStorage on the client side
     if (typeof window === 'undefined') return;
-    
-    // Check for existing token and stored email
-    const token = localStorage.getItem("token");
-    const storedEmail = localStorage.getItem("lastEmail");
-
-    if (token) {
-      // If there's a valid token, attempt to use it
-      handleTokenLogin(token);
-    } else if (storedEmail) {
-      // If there's a stored email but no token, show returning user screen
+    const storedEmail = lastEmail;
+    if (!token && storedEmail) {
       setIsReturningUser(true);
       setEmail(storedEmail);
     }
-  }, []);
+  }, [lastEmail, token]);
 
-  const handleTokenLogin = async (token: string) => {
-    if (typeof window === 'undefined') return;
-    
-    try {
-      const refreshToken = localStorage.getItem("refresh_token");
-      if (!refreshToken) {
-        throw new Error("No refresh token found");
-      }
-      const success = await loginWithToken(token, refreshToken);
-      if (success) {
-        addToast("Welcome back!", "success");
-      }
-    } catch (error) {
-      // If token is invalid, show returning user screen
-      localStorage.removeItem("token");
-      localStorage.removeItem("refresh_token");
-      setIsReturningUser(true);
-    }
-  };
+  // No token auto-login here; AuthContext manages token-based flows securely in-memory
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -79,11 +52,11 @@ export default function LoginPage() {
         <div className="text-center">
           <div className="flex justify-center">
             <Image
-              src="/braavos-logo.svg"
-              alt="Braavos"
-              width={80}
+              src="/full-logo-transparent.png"
+              alt="Sync Logo"
+              width={200}
               height={80}
-              className="mb-4"
+              className="mb-4 h-auto w-auto"
               priority
             />
           </div>
@@ -114,6 +87,7 @@ export default function LoginPage() {
                   id="email"
                   name="email"
                   type="email"
+                  autoComplete="email"
                   required
                   className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm bg-gray-800"
                   placeholder="Email address"
@@ -128,6 +102,7 @@ export default function LoginPage() {
                 id="password"
                 name="password"
                 type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 required
                 className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm bg-gray-800"
                 placeholder="Enter your password"
@@ -169,7 +144,8 @@ export default function LoginPage() {
                     onClick={() => {
                       setIsReturningUser(false);
                       setEmail("");
-                      localStorage.removeItem("lastEmail");
+                      clearAuthData();
+                      clearLastEmail();
                     }}
                     className="text-indigo-400 hover:text-indigo-300"
                   >

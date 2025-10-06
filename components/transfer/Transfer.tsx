@@ -17,7 +17,7 @@ import type { FiatAccount } from "@/contexts/AuthContext";
 
 const Transfer = () => {
   const { getFiatAccounts } = useAuth();
-  const [accounts, setAccounts] = useState<FiatAccount[]>(getFiatAccounts());
+  const [accounts] = useState<FiatAccount[]>(getFiatAccounts());
   const [step, setStep] = useState(1);
   const [recipientAccountNumber, setRecipientAccountNumber] = useState("");
   const [recipientDetails, setRecipientDetails] = useState<{
@@ -59,7 +59,9 @@ const Transfer = () => {
   };
 
   if (!selectedAccount) {
-    return <div className="text-white">Loading...</div>;
+    return <div className="flex items-center justify-center h-64">
+      <div className="loading-spinner h-12 w-12"></div>
+    </div>;
   }
 
   return (

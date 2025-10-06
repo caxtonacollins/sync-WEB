@@ -49,7 +49,7 @@ interface WalletTransaction {
 }
 
 const UnifiedWallet = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { addToast } = useToast();
   const [walletData, setWalletData] = useState<UnifiedWalletData | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
@@ -68,8 +68,6 @@ const UnifiedWallet = () => {
     try {
       setLoading(true);
 
-      const token = localStorage.getItem("token");
-
       const response = await fetch(
         `${process.env.BACKEND_URL}/wallet/balance`,
         {
@@ -78,7 +76,6 @@ const UnifiedWallet = () => {
       );
       const data = await response.json();
 
-      console.log("Fetched wallet data:", data);
       if (!data || !data.fiatBalances || !data.cryptoBalances) {
         throw new Error("Invalid wallet data received");
       }

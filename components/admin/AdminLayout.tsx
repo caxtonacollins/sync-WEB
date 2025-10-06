@@ -17,6 +17,7 @@ import {
   ShieldCheckIcon,
   BanknotesIcon,
   ClockIcon,
+  CubeIcon,
 } from "@heroicons/react/24/outline";
 
 interface AdminLayoutProps {
@@ -54,6 +55,12 @@ const adminNavigation: NavigationItem[] = [
     href: "/admin/wallets",
     icon: BanknotesIcon,
     description: "View all wallets",
+  },
+  {
+    name: "Contracts",
+    href: "/admin/contracts",
+    icon: CubeIcon,
+    description: "Manage smart contracts",
   },
   {
     name: "Analytics",

@@ -60,8 +60,10 @@ export default function UserManagementPage() {
     if (!token) return
     try {
       setLoading(true)
-      const data = await getAllUsers(token)
-      setUsers(data)
+      const res = await getAllUsers(token)
+      // Extract users array from paginated response
+      const usersData = res.data || res
+      setUsers(Array.isArray(usersData) ? usersData : usersData.data || [])
     } catch (error) {
       addToast("Failed to fetch users", "error")
     } finally {

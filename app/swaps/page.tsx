@@ -33,15 +33,14 @@ import { SwapTableSkeleton } from "@/components/skeletons/SwapTableSkeleton";
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 export default function SwapsPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { addToast } = useToast();
   const [swapOrders, setSwapOrders] = useState<SwapOrderListResponse>({
     data: [],
-    page: "1",
-    limit: "10",
+    page: 1,
+    limit: 10,
     total: 0,
   });
-  console.log("Swap Orders State:", swapOrders);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     fromDate: undefined as Date | undefined,
@@ -63,13 +62,12 @@ export default function SwapsPage() {
   }, [token]);
 
   const fetchSwapOrders = async () => {
-    const user = localStorage.getItem("user");
-    const userId = user ? JSON.parse(user).id : null;
+    const userId = user ? user.id : null;
 
-    if (!token) return;
+    if (!token || !userId) return;
     try {
       setLoading(true);
-      const data = await getUserSwapOrders(token, {
+      const response: SwapOrderListResponse = await getUserSwapOrders(token, {
         userId,
         status: filters.status !== "all" ? filters.status : undefined,
         fromCurrency: filters.fromCurrency || undefined,
@@ -79,7 +77,7 @@ export default function SwapsPage() {
         fromDate: filters.fromDate?.toISOString(),
         toDate: filters.toDate?.toISOString(),
       });
-      setSwapOrders(data);
+      setSwapOrders(response as unknown as SwapOrderListResponse);
     } catch (error) {
       addToast("Failed to fetch swap orders", "error");
     } finally {
@@ -88,10 +86,10 @@ export default function SwapsPage() {
   };
 
   useEffect(() => {
-    if (token) {
+    if (token && user?.id) {
       fetchSwapOrders();
     }
-  }, [token, filters]);
+  }, [token, filters, user?.id]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {

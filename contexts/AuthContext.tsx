@@ -1,12 +1,12 @@
 "use client";
 
 import type React from "react";
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useRouter } from "next/navigation";
 import { LoginResponse } from "@/api/server-calls";
-import { loginApi } from "@/api/routes/auth";
+import { loginApi, refreshTokenApi } from "@/api/routes/auth";
 import { getDashboardData, getUserById } from "@/api/routes/user";
-import { get } from "http";
 
 export interface FiatAccount {
   id: string;
@@ -108,6 +108,9 @@ interface AuthContextType {
   loginWithToken: (token: string, refresh_token: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
+  lastEmail: string | null;
+  clearAuthData: () => void;
+  clearLastEmail: () => void;
   fetchUser: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
   fetchUserDetails: () => Promise<void>;
@@ -121,101 +124,145 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [userDetails, setUserDetails] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [refreshTokenValue, setRefreshTokenValue] = useState<string | null>(null);
+  const [lastEmail, setLastEmail] = useLocalStorage<string | null>("lastEmail", null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const clearAuthData = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user");
-    setToken(null);
-    setUser(null);
-  };
+  // Prevent multiple simultaneous refresh attempts
+  const isRefreshing = useRef(false);
+  const refreshPromise = useRef<Promise<boolean> | null>(null);
 
+  const clearAuthData = useCallback(() => {
+    // Clear in-memory state
+    setToken(null);
+    setRefreshTokenValue(null);
+    setUser(null);
+
+    isRefreshing.current = false;
+    refreshPromise.current = null;
+  }, []);
+
+  const clearLastEmail = useCallback(() => {
+    setLastEmail(null);
+  }, [setLastEmail]);
+
+  // Fetch complete user data with all relations (fiatAccounts, cryptoWallets, transactions, etc.)
+  const fetchCompleteUserData = useCallback(async (userId: string, currentToken?: string) => {
+    const tokenToUse = currentToken || token;
+    if (!tokenToUse) {
+      throw new Error("No token available");
+    }
+
+    if (!userId) {
+      throw new Error("No user ID provided");
+    }
+
+    try {
+      // Fetch user with all relations using getDashboardData
+      const data = await getDashboardData(userId, tokenToUse);
+
+      if (!data?.user) {
+        throw new Error("No user data received from backend");
+      }
+
+      // Set complete user data (includes fiatAccounts, cryptoWallets, transactions, etc.)
+      setUser(data.user);
+
+    } catch (error) {
+      console.error("[AuthContext] Failed to fetch user data:", error);
+      throw error;
+    }
+  }, [token]);
+
+  // Initialize auth state on mount
   useEffect(() => {
     const init = async () => {
-      const storedToken = localStorage.getItem("token");
-      const storedRefreshToken = localStorage.getItem("refresh_token");
-      const storedUser = localStorage.getItem("user");
+      try {
 
-      if (storedToken && storedRefreshToken && storedUser) {
-        try {
-          setToken(storedToken);
-          const userData = JSON.parse(storedUser);
-          setUser(userData);
+        // Set in-memory state
+        setToken(token);
+        setRefreshTokenValue(refreshTokenValue);
 
-          await fetchUser(storedToken);
-        } catch (error) {
-          console.error("Init error:", error);
-          try {
-            const refreshed = await refreshToken();
-            if (!refreshed) {
-              clearAuthData();
-            }
-          } catch (refreshError) {
-            clearAuthData();
-          }
+        // Fetch complete user data with relations from backend
+        if (user && token) {
+          await fetchCompleteUserData(user.id, token);
         }
+
+        console.log("[AuthContext] Migration complete - using secure in-memory storage");
+      } catch (error) {
+        console.error("[AuthContext] Init error:", error);
+        clearAuthData();
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [clearAuthData, fetchCompleteUserData]);
 
-  const refreshToken = async (): Promise<boolean> => {
-    try {
-      const storedRefreshToken = localStorage.getItem("refresh_token");
-      if (!storedRefreshToken) {
-        throw new Error("No refresh token found");
-      }
-
-      const response = await fetch(`${process.env.BACKEND_URL}/auth/refresh`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refresh_token: storedRefreshToken }),
-      });
-
-      await fetchUserDetails();
-
-      if (!response.ok) {
-        throw new Error("Token refresh failed");
-      }
-
-      const data = await response.json();
-      const { access_token: newToken, refresh_token: newRefreshToken } = data;
-
-      localStorage.setItem("token", newToken);
-      localStorage.setItem("refresh_token", newRefreshToken);
-      setToken(newToken);
-
-      return true;
-    } catch (error) {
-      console.error("Token refresh failed:", error);
-      logout();
-      return false;
+  const refreshToken = useCallback(async (): Promise<boolean> => {
+    // Prevent multiple simultaneous refresh attempts
+    if (isRefreshing.current && refreshPromise.current) {
+      return refreshPromise.current;
     }
-  };
 
-  const loginWithToken = async (
+    isRefreshing.current = true;
+
+    refreshPromise.current = (async () => {
+      try {
+        if (!refreshTokenValue) {
+          throw new Error("No refresh token available");
+        }
+
+        console.log("[AuthContext] Refreshing access token...");
+        const data = await refreshTokenApi(refreshTokenValue);
+        const { access_token: newToken, refresh_token: newRefreshToken, user: userData } = data;
+
+        // Update in-memory state only
+        setToken(newToken);
+        setRefreshTokenValue(newRefreshToken);
+
+        if (userData?.id) {
+          // Fetch complete user data with all relations
+          await fetchCompleteUserData(userData.id, newToken);
+        }
+
+        console.log("[AuthContext] Token refresh successful");
+        return true;
+      } catch (error) {
+        console.error("[AuthContext] Token refresh failed:", error);
+        clearAuthData();
+        router.push("/login");
+        return false;
+      } finally {
+        isRefreshing.current = false;
+        refreshPromise.current = null;
+      }
+    })();
+
+    return refreshPromise.current;
+  }, [refreshTokenValue, clearAuthData, router]);
+
+  const loginWithToken = useCallback(async (
     existingToken: string,
-    refreshToken: string
-  ) => {
+    existingRefreshToken: string
+  ): Promise<boolean> => {
     try {
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      if (!storedUser.id) throw new Error("No user data found");
-
-      const userData = await getUserById(storedUser.id, existingToken);
+      // Set tokens in memory
       setToken(existingToken);
-      setUser(userData);
-      localStorage.setItem("token", existingToken);
-      localStorage.setItem("refresh_token", refreshToken);
-      await fetchUserDetails();
+      setRefreshTokenValue(existingRefreshToken);
+
+      // Fetch complete user data
+      const userData = await getUserById(user?.id || "", existingToken);
+
+      if (!userData?.id) {
+        throw new Error("Invalid user data received");
+      }
+
+      // Fetch complete data with all relations
+      await fetchCompleteUserData(userData.id, existingToken);
 
       // Redirect based on user role
       if (userData.role === "ADMIN") {
@@ -223,17 +270,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         router.push("/dashboard");
       }
+
       return true;
     } catch (error) {
-      console.error("Token login failed:", error);
-      localStorage.removeItem("token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("user");
+      console.error("[AuthContext] Token login failed:", error);
+      clearAuthData();
       throw error;
     }
-  };
+  }, [user?.id, clearAuthData, router]);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<LoginResult> => {
     try {
       const data = await loginApi(email, password);
 
@@ -254,27 +300,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user: newUser,
       } = data;
 
+
       if (!newToken || !newRefreshToken || !newUser) {
         throw new Error("Invalid response from server");
       }
 
-      localStorage.setItem("token", newToken);
-      localStorage.setItem("refresh_token", newRefreshToken);
-      localStorage.setItem("user", JSON.stringify(newUser));
-      localStorage.setItem("lastEmail", email);
-
       setToken(newToken);
-      setUser(newUser as User);
+      setRefreshTokenValue(newRefreshToken);
+      setLastEmail(newUser.email);
 
-      await fetchUserDetails();
+      // Fetch complete user data with all relations (fiatAccounts, cryptoWallets, etc.)
+      if (newUser.id) {
+        await fetchCompleteUserData(newUser.id, newToken);
+      }
 
-      if (newToken && newUser) {
-        // Redirect based on user role
-        if (newUser.role === "ADMIN") {
-          router.push("/admin");
-        } else {
-          router.push("/dashboard");
-        }
+      // Redirect based on user role
+      if (newUser.role === "ADMIN") {
+        router.push("/admin");
+      } else {
+        router.push("/dashboard");
       }
 
       return {
@@ -284,65 +328,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refresh_token: newRefreshToken,
       };
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error("[AuthContext] Login failed:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Login failed",
       };
     }
-  };
+  }, [router]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
+    console.log("[AuthContext] Logging out...");
     clearAuthData();
     router.push("/login");
-  };
+  }, [clearAuthData, router]);
 
-  const fetchUser = async (currentToken?: string) => {
-    const tokenToUse = currentToken || token;
-    if (!tokenToUse) {
-      throw new Error("No token available");
-    }
-
-    try {
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-
-      if (!storedUser.id) {
-        throw new Error("No user ID found");
-      }
-
-      const freshUser = await getUserById(storedUser.id, tokenToUse);
-      localStorage.setItem("user", JSON.stringify(freshUser));
-      setUser(freshUser);
-    } catch (error) {
-      console.error("Failed to fetch user data:", error);
-      throw error;
-    }
-  };
-
-  const fetchUserDetails = async () => {
+  // Legacy method - now just an alias for fetchCompleteUserData
+  const fetchUser = useCallback(async () => {
     if (!user?.id || !token) {
-      // throw new Error("No user ID or token available");
-      console.log("No user ID or token available");
+      console.warn("[AuthContext] Cannot fetch user: missing user ID or token");
       return;
     }
+    await fetchCompleteUserData(user.id, token);
+  }, [user?.id, token, fetchCompleteUserData]);
 
-    try {
-      const data = await getDashboardData(user.id, token);
-
-      if (!data.user) {
-        throw new Error("No user data received");
-      }
-
-      console.log("Fetched user details:", data.user);
-      setUserDetails(data.user);
-    } catch (error) {
-      console.error("Failed to fetch user details:", error);
-      throw error;
+  // Refresh user data (same as fetchUser, kept for API compatibility)
+  const fetchUserDetails = useCallback(async () => {
+    if (!user?.id || !token) {
+      console.warn("[AuthContext] Cannot fetch user details: missing user ID or token");
+      return;
     }
-  };
+    await fetchCompleteUserData(user.id, token);
+  }, [user?.id, token, fetchCompleteUserData]);
 
-  const getFiatAccounts = () => {
-    return (userDetails?.fiatAccounts || []).map((account) => ({
+  const getFiatAccounts = useCallback(() => {
+    if (!user?.fiatAccounts) {
+      console.warn("[AuthContext] No fiat accounts available");
+      return [];
+    }
+
+    return user.fiatAccounts.map((account) => ({
       ...account,
       name: account.accountName,
       balance: account.balance,
@@ -354,29 +378,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .join("")
         .toUpperCase(),
     }));
-  };
+  }, [user?.fiatAccounts]);
 
-  const getCryptoWallets = () => {
+  const getCryptoWallets = useCallback(() => {
     return user?.cryptoWallets || [];
-  };
+  }, [user?.cryptoWallets]);
 
-  const getTransactions = () => {
+  const getTransactions = useCallback(() => {
     return user?.transactions || [];
-  };
+  }, [user?.transactions]);
 
-  const getSwapOrders = () => {
+  const getSwapOrders = useCallback(() => {
     return user?.swapOrders || [];
-  };
+  }, [user?.swapOrders]);
 
   return (
     <AuthContext.Provider
       value={{
         user,
         token,
+        lastEmail,
         login,
         loginWithToken,
         logout,
         isLoading,
+        clearAuthData,
+        clearLastEmail,
         fetchUser,
         refreshToken,
         fetchUserDetails,

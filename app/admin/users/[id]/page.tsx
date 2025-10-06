@@ -56,7 +56,9 @@ export default function UserDetailPage() {
     try {
       setLoading(true)
       const data = await getUserById(id as string, token)
-      setUser(data)
+      // Handle both direct user object and nested user object
+      const userData = data.user || data
+      setUser(userData)
     } catch (error) {
       addToast("Failed to fetch user details", "error")
     } finally {
@@ -64,7 +66,7 @@ export default function UserDetailPage() {
     }
   }
 
-  const handleStatusChange = async (status: string) => {
+  const handleStatusChange = async (status: User["status"]) => {
     if (!token || !id) return;
     try {
         await updateUserProfile(id as string, { status }, token);

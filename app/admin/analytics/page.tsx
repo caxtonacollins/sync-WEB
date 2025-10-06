@@ -121,7 +121,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="h-64 flex items-center justify-center text-gray-400">
-                  Chart visualization would go here
+                  Here na for Chart
                 </div>
               </CardContent>
             </Card>
@@ -132,7 +132,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="h-64 flex items-center justify-center text-gray-400">
-                  Chart visualization would go here
+                  Here na for Chart
                 </div>
               </CardContent>
             </Card>
