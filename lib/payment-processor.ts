@@ -2,7 +2,35 @@
 // Integrates liquidity bridging, merchant payments, and SYNCPAY token system
 
 import { liquidityBridge, LiquidityPool } from "./liquidity-bridge";
-import { merchantPaymentSystem, PaymentRequest } from "./merchant-payment";
+
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
+
+// Helper to get the auth token (implement this based on your auth solution)
+const getAuthToken = () => {
+  // TODO: Replace with your actual token retrieval logic
+  return localStorage.getItem('authToken');
+};
+
+const api = {
+  post: async (endpoint: string, body: any) => {
+    const token = getAuthToken();
+    const response = await fetch(`${BACKEND_URL}/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'API request failed');
+    }
+
+    return response.json();
+  },
+};
 import { syncpayTokenSystem } from "./syncpay-token";
 
 export interface PaymentProcessorConfig {
@@ -198,71 +226,6 @@ export class PaymentProcessor {
   }
 
   /**
-   * Process a merchant payment with QR code
-   */
-  async processMerchantPayment(
-    qrCodeId: string,
-    userId: string,
-    userWallet: UserWallet,
-    paymentMethod: "fiat" | "crypto" | "auto" = "auto"
-  ): Promise<PaymentResult> {
-    const startTime = Date.now();
-
-    try {
-      // Get QR code details
-      const qrCode = merchantPaymentSystem.getPaymentQR(qrCodeId);
-      if (!qrCode) {
-        throw new Error("Invalid QR code");
-      }
-
-      // Process the payment
-      const paymentRequest = await merchantPaymentSystem.processPayment(
-        qrCodeId,
-        userId,
-        paymentMethod
-      );
-
-      // Process settlement if instant settlement is enabled
-      if (this.config.enableInstantSettlement) {
-        await merchantPaymentSystem.processSettlement(paymentRequest);
-      }
-
-      // Calculate fees and discounts
-      const baseFee = this.calculateBaseFee(paymentRequest.amount);
-      const discount = this.config.enableSyncPayDiscounts
-        ? syncpayTokenSystem.getFeeDiscount(userId)
-        : null;
-
-      const finalFee = discount
-        ? syncpayTokenSystem.applyFeeDiscount(baseFee, userId)
-        : baseFee;
-
-      return {
-        success: true,
-        transactionId: paymentRequest.id,
-        amount: paymentRequest.amount,
-        currency: paymentRequest.currency,
-        fee: finalFee,
-        discountApplied: discount ? baseFee - finalFee : 0,
-        method: paymentRequest.paymentMethod === "fiat" ? "fiat" : "crypto",
-        settlementTime: Date.now() - startTime,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        transactionId: "",
-        amount: 0,
-        currency: "",
-        fee: 0,
-        discountApplied: 0,
-        method: "fiat",
-        settlementTime: Date.now() - startTime,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
-    }
-  }
-
-  /**
    * Find the best crypto wallet for bridging
    */
   private findBestCryptoWallet(
@@ -347,15 +310,40 @@ export class PaymentProcessor {
   }
 
   /**
-   * Get merchant payment information
+   * Execute a swap (Token <> Fiat)
    */
-  getMerchantPaymentInfo(merchantId: string) {
-    return {
-      merchant: merchantPaymentSystem.getMerchant(merchantId),
-      payments: merchantPaymentSystem.getMerchantPayments(merchantId),
-      settlementPreference:
-        merchantPaymentSystem.getSettlementPreference(merchantId),
-    };
+  async executeSwap(swapData: {
+    fromCurrency: string;
+    toCurrency: string;
+    fromAmount: number;
+    toAmount: number;
+    rate: number;
+    userId: string;
+    reference: string;
+  }) {
+    return api.post('swap-order/execute', swapData);
+  }
+
+  /**
+   * Transfer a token to another address
+   */
+  async transferToken(transferData: {
+    toAddress: string;
+    amount: number;
+    token: string;
+  }) {
+    return api.post('transfer/token', transferData);
+  }
+
+  /**
+   * Transfer fiat to another user
+   */
+  async transferFiat(transferData: {
+    recipientEmail: string;
+    amount: number;
+    currency: string;
+  }) {
+    return api.post('tx/fiat', transferData);
   }
 }
 

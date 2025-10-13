@@ -16,6 +16,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getAdminDashboardStats } from "@/api/routes/admin";
 
 interface DashboardStats {
   totalUsers: number;
@@ -40,45 +41,17 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadDashboardStats();
-  }, []);
+    if (token) {
+      loadDashboardStats();
+    }
+  }, [token]);
 
   const loadDashboardStats = async () => {
+    if (!token) return;
     try {
       setLoading(true);
-      
-      // Mock data - replace with actual API call
-      const mockStats: DashboardStats = {
-        totalUsers: 1247,
-        activeUsers: 892,
-        totalTransactions: 5432,
-        transactionVolume: 45000000,
-        totalWallets: 2340,
-        pendingKYC: 34,
-        systemHealth: "Excellent",
-        recentActivity: [
-          {
-            id: "1",
-            type: "user_registration",
-            description: "New user registered: john.doe@example.com",
-            timestamp: new Date().toISOString(),
-          },
-          {
-            id: "2",
-            type: "transaction",
-            description: "Large transaction processed: ₦500,000",
-            timestamp: new Date(Date.now() - 300000).toISOString(),
-          },
-          {
-            id: "3",
-            type: "kyc_verification",
-            description: "KYC approved for user ID: abc-123",
-            timestamp: new Date(Date.now() - 600000).toISOString(),
-          },
-        ],
-      };
-      
-      setStats(mockStats);
+      const response = await getAdminDashboardStats(token);
+      setStats(response);
     } catch (error) {
       addToast("Failed to load dashboard statistics", "error");
     } finally {

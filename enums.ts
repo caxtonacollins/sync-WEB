@@ -1,0 +1,4 @@
+export enum SwapType {
+  TOKENTOFIAT = 'TOKENTOFIAT',
+  FIATTOTOKEN = 'FIATTOTOKEN',
+}

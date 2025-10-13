@@ -29,14 +29,14 @@ import {
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { SwapTableSkeleton } from "@/components/skeletons/SwapTableSkeleton";
-import BridgeLiquidityModal from "@/components/modals/BridgeLiquidityModal";
+import PaymentModal from "@/components/modals/PaymentModal";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 export default function SwapsPage() {
   const { token, user } = useAuth();
   const { addToast } = useToast();
-  const [showBridgeModal, setShowBridgeModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [swapOrders, setSwapOrders] = useState<SwapOrderListResponse>({
     data: [],
     page: 1,
@@ -106,8 +106,8 @@ export default function SwapsPage() {
     }
   };
 
-  const toggleBridgeInterface = () => {
-    setShowBridgeModal(true);
+  const togglePaymentModal = () => {
+    setShowPaymentModal(true);
   };
 
   return (
@@ -123,7 +123,7 @@ export default function SwapsPage() {
                 <Button
                   size="sm"
                   className="bg-purple-800 hover:bg-purple-700"
-                  onClick={toggleBridgeInterface}
+                  onClick={togglePaymentModal}
                 >
                   <PlusIcon className="h-5 w-5 mr-2" />
                   New Swap
@@ -376,9 +376,9 @@ export default function SwapsPage() {
               </div>
             </div>
           )}
-             <BridgeLiquidityModal 
-        isOpen={showBridgeModal} 
-        onClose={() => setShowBridgeModal(false)} 
+             <PaymentModal 
+        isOpen={showPaymentModal} 
+        onClose={() => setShowPaymentModal(false)} 
       />
         </div>
       </Layout>

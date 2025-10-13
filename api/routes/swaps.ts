@@ -1,4 +1,5 @@
-import axios from "axios";
+import { SwapType } from "@/enums";
+import api from "../index";
 
 export interface SwapOrderResponse {
   id: string;
@@ -23,6 +24,30 @@ export interface SwapOrderListResponse {
   total: number;
 }
 
+export interface CreateSwapOrderPayload {
+  fromCurrency: string;
+  toCurrency: string;
+  fromAmount: number;
+  toAmount: number;
+  rate: number;
+  fee?: number;
+  status: string;
+  userId: string;
+  reference: string;
+  swapType: SwapType;
+}
+
+export const executeSwap = async (token: string, payload: CreateSwapOrderPayload) => {
+  try {
+    const response = await api.post("/swap-order/execute", payload, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const getUserSwapOrders = async (
   token: string,
   params: {
@@ -40,8 +65,8 @@ export const getUserSwapOrders = async (
     throw new Error("userId is required");
   }
 
-  const response = await axios.get<SwapOrderListResponse>(
-    `${process.env.BACKEND_URL}/swap-order`,
+  const response = await api.get<SwapOrderListResponse>(
+    `/swap-order`,
     {
       headers: { Authorization: `Bearer ${token}` },
       // Include userId so backend filters by current user
@@ -53,7 +78,7 @@ export const getUserSwapOrders = async (
 
 export const getSwapOrdersByUserId = async (userId: string, token: string) => {
   try {
-    const response = await axios.get(`/user/${userId}/swap-orders`, {
+    const response = await api.get(`/user/${userId}/swap-orders`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;

@@ -14,6 +14,8 @@ export default function RegisterPage() {
   const [phoneNumber, setPhoneNumber] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [bvn, setBvn] = useState("")
+  const [nin, setNin] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { addToast } = useToast()
@@ -36,7 +38,7 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      await createUser({ firstName, lastName, email, password, phoneNumber });
+      await createUser({ firstName, lastName, email, password, phoneNumber, bvn, nin });
       addToast("Registration successful! Please login with your credentials.", "success")
       router.push("/login")
     } catch (error: any) {
@@ -119,6 +121,38 @@ export default function RegisterPage() {
                 placeholder="Enter your phone number"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="bvn" className="form-label">
+                BVN
+              </label>
+              <input
+                id="bvn"
+                name="bvn"
+                type="text"
+                required
+                className="form-input h-12"
+                placeholder="Enter your BVN"
+                value={bvn}
+                onChange={(e) => setBvn(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="nin" className="form-label">
+                NIN
+              </label>
+              <input
+                id="nin"
+                name="nin"
+                type="text"
+                required
+                className="form-input h-12"
+                placeholder="Enter your NIN"
+                value={nin}
+                onChange={(e) => setNin(e.target.value)}
               />
             </div>
 
