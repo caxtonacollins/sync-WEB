@@ -12,8 +12,6 @@ import {
   ArrowPathIcon,
   ShieldCheckIcon,
   BanknotesIcon,
-  CheckCircleIcon,
-  XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +25,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   useAdminContracts,
   useUpgradeAccountFactory,
@@ -35,9 +32,11 @@ import {
   useAddSupportedToken,
   useUpgradeLiquidityContract,
   useUpdateOracleAddress,
-  type ContractInfo,
 } from "@/hooks/api/useAdminContracts";
-import { contractFactorySchema, type ContractFormData } from "@/lib/validations/contract";
+import {
+  contractFactorySchema,
+  type ContractFormData,
+} from "@/lib/validations/contract";
 
 export default function ContractsPage() {
   const { addToast } = useToast();
@@ -63,9 +62,11 @@ export default function ContractsPage() {
 
   // Mutations
   const { mutateAsync: upgradeAccountFactory } = useUpgradeAccountFactory();
-  const { mutateAsync: transferFactoryOwnership } = useTransferFactoryOwnership();
+  const { mutateAsync: transferFactoryOwnership } =
+    useTransferFactoryOwnership();
   const { mutateAsync: addSupportedToken } = useAddSupportedToken();
-  const { mutateAsync: upgradeLiquidityContract } = useUpgradeLiquidityContract();
+  const { mutateAsync: upgradeLiquidityContract } =
+    useUpgradeLiquidityContract();
   const { mutateAsync: updateOracleAddress } = useUpdateOracleAddress();
 
   const handleFormSubmit = async (formData: ContractFormData) => {
@@ -111,326 +112,12 @@ export default function ContractsPage() {
     }
   };
 
-  return (
-    <AdminProtectedRoute>
-      <AdminLayout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-white mb-4">Contract Management</h1>
-            <div className="flex space-x-4">
-              <button
-                onClick={() => setActiveTab("overview")}
-                className={`px-4 py-2 rounded-lg ${
-                  activeTab === "overview" ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300"
-                }`}
-              >
-                Overview
-              </button>
-              <button
-                onClick={() => setActiveTab("factory")}
-                className={`px-4 py-2 rounded-lg ${
-                  activeTab === "factory" ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300"
-                }`}
-              >
-                Factory
-              </button>
-              <button
-                onClick={() => setActiveTab("liquidity")}
-                className={`px-4 py-2 rounded-lg ${
-                  activeTab === "liquidity" ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300"
-                }`}
-              >
-                Liquidity
-              </button>
-            </div>
-          </div>
-
-          {activeTab === "factory" && (
-            <div className="space-y-6">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Upgrade Account Factory</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <FormField
-                        control={form.control}
-                        name="newClassHash"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>New Class Hash</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter new class hash"
-                                {...field}
-                                disabled={processing}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button
-                        type="submit"
-                        disabled={processing || !form.getValues("newClassHash")}
-                        className="mt-4"
-                      >
-                        {processing ? "Processing..." : "Upgrade Factory"}
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Transfer Factory Ownership</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <FormField
-                        control={form.control}
-                        name="newOwnerAddress"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>New Owner Address</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter new owner address"
-                                {...field}
-                                disabled={processing}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button
-                        type="submit"
-                        disabled={processing || !form.getValues("newOwnerAddress")}
-                        className="mt-4"
-                      >
-                        {processing ? "Processing..." : "Transfer Ownership"}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </form>
-              </Form>
-            </div>
-          )}
-
-          {activeTab === "liquidity" && (
-            <div className="space-y-6">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Add Supported Token</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="tokenSymbol"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Token Symbol</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter token symbol"
-                                  {...field}
-                                  disabled={processing}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="tokenAddress"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Token Address</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter token address"
-                                  {...field}
-                                  disabled={processing}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <Button
-                        type="submit"
-                        disabled={
-                          processing ||
-                          !form.getValues("tokenSymbol") ||
-                          !form.getValues("tokenAddress")
-                        }
-                        className="mt-4"
-                      >
-                        {processing ? "Processing..." : "Add Token"}
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Upgrade Liquidity Contract</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <FormField
-                        control={form.control}
-                        name="newClassHash"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>New Class Hash</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter new class hash"
-                                {...field}
-                                disabled={processing}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button
-                        type="submit"
-                        disabled={processing || !form.getValues("newClassHash")}
-                        className="mt-4"
-                      >
-                        {processing ? "Processing..." : "Upgrade Contract"}
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Update Oracle Address</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <FormField
-                        control={form.control}
-                        name="oracleAddress"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Oracle Address</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter oracle address"
-                                {...field}
-                                disabled={processing}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button
-                        type="submit"
-                        disabled={processing || !form.getValues("oracleAddress")}
-                        className="mt-4"
-                      >
-                        {processing ? "Processing..." : "Update Oracle"}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </form>
-              </Form>
-            </div>
-          )}
-
-          {activeTab === "overview" && (
-            <div className="space-y-6">
-              {loading ? (
-                <div>Loading contract information...</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {contracts && Object.entries(contracts).map(([key, value]) => (
-                    <Card key={key}>
-                      <CardHeader>
-                        <CardTitle>{key}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <p>
-                            <span className="text-gray-400">Address:</span>{" "}
-                            <code className="text-sm bg-gray-800 px-2 py-1 rounded">
-                              {value.address}
-                            </code>
-                          </p>
-                          <p>
-                            <span className="text-gray-400">Class Hash:</span>{" "}
-                            <code className="text-sm bg-gray-800 px-2 py-1 rounded">
-                              {value.classHash}
-                            </code>
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </AdminLayout>
-    </AdminProtectedRoute>
-  );
-      setTokenAddress("");
-    } catch (error) {
-      addToast("Failed to add supported token", "error");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleUpgradeLiquidityContract = async () => {
-    if (!newClassHash) {
-      addToast("Please enter a class hash", "error");
-      return;
-    }
-
-    try {
-      setProcessing(true);
-      await upgradeLiquidityContract(newClassHash);
-      addToast("Liquidity contract upgraded successfully", "success");
-      setNewClassHash("");
-    } catch (error) {
-      addToast("Failed to upgrade liquidity contract", "error");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleUpdateOracleAddress = async () => {
-    if (!oracleAddress) {
-      addToast("Please enter an oracle address", "error");
-      return;
-    }
-
-    try {
-      setProcessing(true);
-      await updateOracleAddress(oracleAddress);
-      addToast("Oracle address updated successfully", "success");
-      setOracleAddress("");
-    } catch (error) {
-      addToast("Failed to update oracle address", "error");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
   if (loading) {
     return (
       <AdminProtectedRoute>
         <AdminLayout>
           <div className="flex items-center justify-center h-64">
-            <div className="loading-spinner h-12 w-12"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
           </div>
         </AdminLayout>
       </AdminProtectedRoute>
@@ -539,207 +226,309 @@ export default function ContractsPage() {
           {/* Account Factory Tab */}
           {activeTab === "factory" && (
             <div className="space-y-6">
-              <Card className="bg-gray-800 border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <ArrowPathIcon className="h-5 w-5 mr-2 text-purple-400" />
-                    Upgrade Account Factory
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      New Class Hash
-                    </label>
-                    <input
-                      type="text"
-                      value={newClassHash}
-                      onChange={(e) => setNewClassHash(e.target.value)}
-                      placeholder="0x..."
-                      className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                  <button
-                    onClick={handleUpgradeAccountFactory}
-                    disabled={processing}
-                    className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center"
-                  >
-                    {processing ? (
-                      <div className="loading-spinner h-5 w-5"></div>
-                    ) : (
-                      <>
-                        <ArrowPathIcon className="h-5 w-5 mr-2" />
-                        Upgrade Contract
-                      </>
-                    )}
-                  </button>
-                </CardContent>
-              </Card>
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(handleFormSubmit)}
+                  className="space-y-6"
+                >
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center">
+                        <ArrowPathIcon className="h-5 w-5 mr-2 text-purple-400" />
+                        Upgrade Account Factory
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="newClassHash"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-gray-300">
+                              New Class Hash
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="0x..."
+                                {...field}
+                                disabled={processing}
+                                className="bg-gray-900 border-gray-700 text-white"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        disabled={processing || !form.watch("newClassHash")}
+                        className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600"
+                      >
+                        {processing ? (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Processing...
+                          </div>
+                        ) : (
+                          <>
+                            <ArrowPathIcon className="h-5 w-5 mr-2" />
+                            Upgrade Contract
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </form>
+              </Form>
 
-              <Card className="bg-gray-800 border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <ShieldCheckIcon className="h-5 w-5 mr-2 text-orange-400" />
-                    Transfer Ownership
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      New Owner Address
-                    </label>
-                    <input
-                      type="text"
-                      value={newOwnerAddress}
-                      onChange={(e) => setNewOwnerAddress(e.target.value)}
-                      placeholder="0x..."
-                      className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    />
-                  </div>
-                  <button
-                    onClick={handleTransferFactoryOwnership}
-                    disabled={processing}
-                    className="w-full px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center"
-                  >
-                    {processing ? (
-                      <div className="loading-spinner h-5 w-5"></div>
-                    ) : (
-                      <>
-                        <ShieldCheckIcon className="h-5 w-5 mr-2" />
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(handleFormSubmit)}
+                  className="space-y-6"
+                >
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center">
+                        <ShieldCheckIcon className="h-5 w-5 mr-2 text-orange-400" />
                         Transfer Ownership
-                      </>
-                    )}
-                  </button>
-                </CardContent>
-              </Card>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="newOwnerAddress"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-gray-300">
+                              New Owner Address
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="0x..."
+                                {...field}
+                                disabled={processing}
+                                className="bg-gray-900 border-gray-700 text-white"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        disabled={processing || !form.watch("newOwnerAddress")}
+                        className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600"
+                      >
+                        {processing ? (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Processing...
+                          </div>
+                        ) : (
+                          <>
+                            <ShieldCheckIcon className="h-5 w-5 mr-2" />
+                            Transfer Ownership
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </form>
+              </Form>
             </div>
           )}
 
           {/* Liquidity Pool Tab */}
           {activeTab === "liquidity" && (
             <div className="space-y-6">
-              <Card className="bg-gray-800 border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <BanknotesIcon className="h-5 w-5 mr-2 text-green-400" />
-                    Add Supported Token
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Token Symbol
-                    </label>
-                    <input
-                      type="text"
-                      value={tokenSymbol}
-                      onChange={(e) => setTokenSymbol(e.target.value)}
-                      placeholder="STRK, ETH, USDC..."
-                      className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Token Address
-                    </label>
-                    <input
-                      type="text"
-                      value={tokenAddress}
-                      onChange={(e) => setTokenAddress(e.target.value)}
-                      placeholder="0x..."
-                      className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-                  <button
-                    onClick={handleAddSupportedToken}
-                    disabled={processing}
-                    className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center"
-                  >
-                    {processing ? (
-                      <div className="loading-spinner h-5 w-5"></div>
-                    ) : (
-                      <>
-                        <BanknotesIcon className="h-5 w-5 mr-2" />
-                        Add Token
-                      </>
-                    )}
-                  </button>
-                </CardContent>
-              </Card>
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(handleFormSubmit)}
+                  className="space-y-6"
+                >
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center">
+                        <BanknotesIcon className="h-5 w-5 mr-2 text-green-400" />
+                        Add Supported Token
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="tokenSymbol"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-gray-300">
+                              Token Symbol
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="STRK, ETH, USDC..."
+                                {...field}
+                                disabled={processing}
+                                className="bg-gray-900 border-gray-700 text-white"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="tokenAddress"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-gray-300">
+                              Token Address
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="0x..."
+                                {...field}
+                                disabled={processing}
+                                className="bg-gray-900 border-gray-700 text-white"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        disabled={
+                          processing ||
+                          !form.watch("tokenSymbol") ||
+                          !form.watch("tokenAddress")
+                        }
+                        className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600"
+                      >
+                        {processing ? (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Processing...
+                          </div>
+                        ) : (
+                          <>
+                            <BanknotesIcon className="h-5 w-5 mr-2" />
+                            Add Token
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </form>
+              </Form>
 
-              <Card className="bg-gray-800 border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <ArrowPathIcon className="h-5 w-5 mr-2 text-purple-400" />
-                    Upgrade Liquidity Contract
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      New Class Hash
-                    </label>
-                    <input
-                      type="text"
-                      value={newClassHash}
-                      onChange={(e) => setNewClassHash(e.target.value)}
-                      placeholder="0x..."
-                      className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                  <button
-                    onClick={handleUpgradeLiquidityContract}
-                    disabled={processing}
-                    className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center"
-                  >
-                    {processing ? (
-                      <div className="loading-spinner h-5 w-5"></div>
-                    ) : (
-                      <>
-                        <ArrowPathIcon className="h-5 w-5 mr-2" />
-                        Upgrade Contract
-                      </>
-                    )}
-                  </button>
-                </CardContent>
-              </Card>
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(handleFormSubmit)}
+                  className="space-y-6"
+                >
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center">
+                        <ArrowPathIcon className="h-5 w-5 mr-2 text-purple-400" />
+                        Upgrade Liquidity Contract
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="newClassHash"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-gray-300">
+                              New Class Hash
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="0x..."
+                                {...field}
+                                disabled={processing}
+                                className="bg-gray-900 border-gray-700 text-white"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        disabled={processing || !form.watch("newClassHash")}
+                        className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600"
+                      >
+                        {processing ? (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Processing...
+                          </div>
+                        ) : (
+                          <>
+                            <ArrowPathIcon className="h-5 w-5 mr-2" />
+                            Upgrade Contract
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </form>
+              </Form>
 
-              <Card className="bg-gray-800 border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <CogIcon className="h-5 w-5 mr-2 text-blue-400" />
-                    Update Oracle Address
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Pragma Oracle Address
-                    </label>
-                    <input
-                      type="text"
-                      value={oracleAddress}
-                      onChange={(e) => setOracleAddress(e.target.value)}
-                      placeholder="0x..."
-                      className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <button
-                    onClick={handleUpdateOracleAddress}
-                    disabled={processing}
-                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center"
-                  >
-                    {processing ? (
-                      <div className="loading-spinner h-5 w-5"></div>
-                    ) : (
-                      <>
-                        <CogIcon className="h-5 w-5 mr-2" />
-                        Update Oracle
-                      </>
-                    )}
-                  </button>
-                </CardContent>
-              </Card>
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(handleFormSubmit)}
+                  className="space-y-6"
+                >
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center">
+                        <CogIcon className="h-5 w-5 mr-2 text-blue-400" />
+                        Update Oracle Address
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="oracleAddress"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-gray-300">
+                              Pragma Oracle Address
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="0x..."
+                                {...field}
+                                disabled={processing}
+                                className="bg-gray-900 border-gray-700 text-white"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        disabled={processing || !form.watch("oracleAddress")}
+                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600"
+                      >
+                        {processing ? (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Processing...
+                          </div>
+                        ) : (
+                          <>
+                            <CogIcon className="h-5 w-5 mr-2" />
+                            Update Oracle
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </form>
+              </Form>
             </div>
           )}
         </div>
