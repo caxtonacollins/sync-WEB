@@ -48,7 +48,7 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
     try {
       setIsLoading(true);
       const { data } = await axios.get(
-        `${process.env.BACKEND_URL}/auth/security/status`,
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/security/status`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setStatus(data);
@@ -89,7 +89,7 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
       }
 
       await axios.post(
-        `${process.env.BACKEND_URL}/auth/security/password`,
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/security/password`,
         {
           currentPassword: newPassword.current,
           newPassword: newPassword.new,
@@ -115,7 +115,7 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
       setError(null);
 
       await axios.post(
-        `${process.env.BACKEND_URL}/auth/security/${type}/disable`,
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/security/${type}/disable`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

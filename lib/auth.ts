@@ -15,13 +15,12 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // Ensure you have BACKEND_URL in your .env.local file
-        if (!process.env.BACKEND_URL) {
-          throw new Error("BACKEND_URL environment variable is not set");
+        if (!process.env.NEXT_PUBLIC_API_URL) {
+          throw new Error("NEXT_PUBLIC_API_URL environment variable is not set");
         }
 
         try {
-          const response = await axios.post(`${process.env.BACKEND_URL}/auth/login`, {
+          const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
             email: credentials.email,
             password: credentials.password,
           });

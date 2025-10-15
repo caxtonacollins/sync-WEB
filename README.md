@@ -38,7 +38,7 @@ A modern, responsive sync frontend built with Next.js 15, React, TypeScript, and
 3. **Set up environment variables**
    Create a `.env.local` file in the root directory:
    ~~~ env
-   BACKEND_URL=http://localhost:3000
+   NEXT_PUBLIC_API_URL=http://localhost:3000
    ~~~ 
 
 4. **Run the development server**

@@ -3,7 +3,7 @@
 
 import { liquidityBridge, LiquidityPool } from "./liquidity-bridge";
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 // Helper to get the auth token (implement this based on your auth solution)
 const getAuthToken = () => {

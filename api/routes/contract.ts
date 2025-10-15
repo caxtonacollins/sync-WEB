@@ -1,28 +1,28 @@
-import axios from "axios";
+import api from "../index";
 
 export const createBlockchainAccount = async (data: any, token: string) => {
-  const response = await axios.post(`${process.env.BACKEND_URL}/contract/create-account`, data, {
+  const response = await api.post(`/contract/create-account`, data, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
 export const getContractDashboard = async (userAddress: string, token: string) => {
-  const response = await axios.get(`${process.env.BACKEND_URL}/contract/dashboard/${userAddress}`, {
+  const response = await api.get(`/contract/dashboard/${userAddress}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
 export const getTokenBalance = async (userAddress: string, symbol: string, token: string) => {
-  const response = await axios.get(`${process.env.BACKEND_URL}/contract/balance/${userAddress}/${symbol}`, {
+  const response = await api.get(`/contract/balance/${userAddress}/${symbol}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
 export const convertTokenToUsd = async (params: any, token: string) => {
-  const response = await axios.get(`${process.env.BACKEND_URL}/contract/amount_in_usd`, {
+  const response = await api.get(`/contract/amount_in_usd`, {
     params,
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -31,8 +31,8 @@ export const convertTokenToUsd = async (params: any, token: string) => {
 
 
 export const swapFiatToToken = async (data: any, token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/contract/swap-fiat-to-token`,
+  const response = await api.post(
+    `/contract/swap-fiat-to-token`,
     data,
     {
       headers: { Authorization: `Bearer ${token}` },
@@ -42,8 +42,8 @@ export const swapFiatToToken = async (data: any, token: string) => {
 };
 
 export const swapTokenToFiat = async (data: any, token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/contract/swap-token-to-fiat`,
+  const response = await api.post(
+    `/contract/swap-token-to-fiat`,
     data,
     {
       headers: { Authorization: `Bearer ${token}` },
@@ -53,8 +53,8 @@ export const swapTokenToFiat = async (data: any, token: string) => {
 };
 
 export const mintToken = async (data: any, token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/contract/mint-token`,
+  const response = await api.post(
+    `/contract/mint-token`,
     data,
     {
       headers: { Authorization: `Bearer ${token}` },
@@ -65,8 +65,8 @@ export const mintToken = async (data: any, token: string) => {
 
 // Admin Contract Management APIs
 export const upgradeAccountFactory = async (data: { classHash: string }, token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/contract/upgrade-account-factory`,
+  const response = await api.post(
+    `/contract/upgrade-account-factory`,
     data,
     {
       headers: { Authorization: `Bearer ${token}` },
@@ -76,8 +76,8 @@ export const upgradeAccountFactory = async (data: { classHash: string }, token: 
 };
 
 export const transferFactoryOwnership = async (data: { newOwnerAddress: string }, token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/contract/transfer-ownership`,
+  const response = await api.post(
+    `/contract/transfer-ownership`,
     data,
     {
       headers: { Authorization: `Bearer ${token}` },
@@ -87,8 +87,8 @@ export const transferFactoryOwnership = async (data: { newOwnerAddress: string }
 };
 
 export const setAccountClassHash = async (data: { classHash: string }, token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/contract/account_classhash`,
+  const response = await api.post(
+    `/contract/account_classhash`,
     data,
     {
       headers: { Authorization: `Bearer ${token}` },
@@ -98,8 +98,8 @@ export const setAccountClassHash = async (data: { classHash: string }, token: st
 };
 
 export const getAccountClassHash = async (token: string) => {
-  const response = await axios.get(
-    `${process.env.BACKEND_URL}/contract/account_classhash`,
+  const response = await api.get(
+    `/contract/account_classhash`,
     {
       headers: { Authorization: `Bearer ${token}` },
     }
@@ -108,8 +108,8 @@ export const getAccountClassHash = async (token: string) => {
 };
 
 export const addSupportedToken = async (data: { symbol: string; address: string }, token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/contract/add-supported-token`,
+  const response = await api.post(
+    `/contract/add-supported-token`,
     data,
     {
       headers: { Authorization: `Bearer ${token}` },
@@ -119,8 +119,8 @@ export const addSupportedToken = async (data: { symbol: string; address: string 
 };
 
 export const upgradeLiquidityContract = async (data: { classHash: string }, token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/contract/upgrade-liquidity-contract`,
+  const response = await api.post(
+    `/contract/upgrade-liquidity-contract`,
     data,
     {
       headers: { Authorization: `Bearer ${token}` },
@@ -130,8 +130,8 @@ export const upgradeLiquidityContract = async (data: { classHash: string }, toke
 };
 
 export const transferLiquidityOwnership = async (data: { newOwnerAddress: string }, token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/contract/transfer-liquidity-ownership`,
+  const response = await api.post(
+    `/contract/transfer-liquidity-ownership`,
     data,
     {
       headers: { Authorization: `Bearer ${token}` },
@@ -141,8 +141,8 @@ export const transferLiquidityOwnership = async (data: { newOwnerAddress: string
 };
 
 export const updatePragmaOracleAddress = async (data: { contractAddress: string }, token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/contract/upgrade-pragma-oracle-address`,
+  const response = await api.post(
+    `/contract/upgrade-pragma-oracle-address`,
     data,
     {
       headers: { Authorization: `Bearer ${token}` },
@@ -153,8 +153,8 @@ export const updatePragmaOracleAddress = async (data: { contractAddress: string 
 
 // Event Listener APIs
 export const getEventListenerStatus = async (token: string) => {
-  const response = await axios.get(
-    `${process.env.BACKEND_URL}/contract/event-listener/status`,
+  const response = await api.get(
+    `/contract/event-listener/status`,
     {
       headers: { Authorization: `Bearer ${token}` },
     }
@@ -163,8 +163,8 @@ export const getEventListenerStatus = async (token: string) => {
 };
 
 export const getActiveSubscriptions = async (token: string) => {
-  const response = await axios.get(
-    `${process.env.BACKEND_URL}/contract/event-listener/subscriptions`,
+  const response = await api.get(
+    `/contract/event-listener/subscriptions`,
     {
       headers: { Authorization: `Bearer ${token}` },
     }
@@ -173,8 +173,8 @@ export const getActiveSubscriptions = async (token: string) => {
 };
 
 export const subscribeToTransaction = async (transactionHash: string, token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/contract/event-listener/subscribe-transaction/${transactionHash}`,
+  const response = await api.post(
+    `/contract/event-listener/subscribe-transaction/${transactionHash}`,
     {},
     {
       headers: { Authorization: `Bearer ${token}` },
@@ -184,8 +184,8 @@ export const subscribeToTransaction = async (transactionHash: string, token: str
 };
 
 export const unsubscribeFromEvent = async (subscriptionId: string, token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/contract/event-listener/unsubscribe/${subscriptionId}`,
+  const response = await api.post(
+    `/contract/event-listener/unsubscribe/${subscriptionId}`,
     {},
     {
       headers: { Authorization: `Bearer ${token}` },
@@ -195,8 +195,8 @@ export const unsubscribeFromEvent = async (subscriptionId: string, token: string
 };
 
 export const unsubscribeFromAllEvents = async (token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/contract/event-listener/unsubscribe-all`,
+  const response = await api.post(
+    `/contract/event-listener/unsubscribe-all`,
     {},
     {
       headers: { Authorization: `Bearer ${token}` },

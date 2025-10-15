@@ -125,61 +125,6 @@ export default function ContractsPage() {
     }
   };
 
-  const handleTransferFactoryOwnership = async () => {
-    if (!newOwnerAddress) {
-      addToast("Please enter a new owner address", "error");
-      return;
-    }
-
-    try {
-      setProcessing(true);
-      await transferFactoryOwnership(newOwnerAddress);
-      addToast("Ownership transferred successfully", "success");
-      setNewOwnerAddress("");
-    } catch (error) {
-      addToast("Failed to transfer ownership", "error");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleAddSupportedToken = async () => {
-    if (!tokenSymbol || !tokenAddress) {
-      addToast("Please enter both token symbol and address", "error");
-      return;
-    }
-
-    try {
-      setProcessing(true);
-      await addSupportedToken({ symbol: tokenSymbol, address: tokenAddress });
-      addToast("Token added successfully", "success");
-      setTokenSymbol("");
-      setTokenAddress("");
-    } catch (error) {
-      addToast("Failed to add supported token", "error");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleUpgradeLiquidityContract = async () => {
-    if (!newClassHash) {
-      addToast("Please enter a class hash", "error");
-      return;
-    }
-
-    try {
-      setProcessing(true);
-      await upgradeLiquidityContract(newClassHash);
-      addToast("Liquidity contract upgraded successfully", "success");
-      setNewClassHash("");
-    } catch (error) {
-      addToast("Failed to upgrade liquidity contract", "error");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
   const handleUpdateOracleAddress = async () => {
     if (!oracleAddress) {
       addToast("Please enter an oracle address", "error");
@@ -287,7 +232,7 @@ export default function ContractsPage() {
           {activeTab === "overview" && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {contracts.map((contract, index) => (
+                {contracts?.map((contract, index) => (
                   <Card key={index} className="bg-gray-800 border-gray-700">
                     <CardHeader>
                       <CardTitle className="text-white flex items-center justify-between">

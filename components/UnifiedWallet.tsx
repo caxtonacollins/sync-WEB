@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import {
@@ -13,114 +13,60 @@ import {
   EyeOff,
   TrendingUp,
   TrendingDown,
+  RefreshCw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useWalletData, useWalletTransactions, WalletTransaction } from "@/hooks/useWalletData";
 
-interface WalletBalance {
-  currency: string;
-  balance: number;
-  accountId?: string;
-  walletId?: string;
-  provider?: string;
-  network?: string;
-  address?: string;
-  isDefault: boolean;
-}
-
-interface UnifiedWalletData {
-  userId: string;
-  fiatBalances: WalletBalance[];
-  cryptoBalances: WalletBalance[];
-  totalValueUSD: number;
-  totalValueNGN: number;
-}
-
-interface WalletTransaction {
-  id: string;
-  type: "fiat" | "crypto";
-  currency: string;
-  amount: number;
-  status: string;
-  reference: string;
-  createdAt: string;
-}
+// Re-exporting types from the hooks file
 
 const UnifiedWallet = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const { addToast } = useToast();
-  const [walletData, setWalletData] = useState<UnifiedWalletData | null>(null);
-  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showBalances, setShowBalances] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
 
-  useEffect(() => {
-    if (user) {
-      loadWalletData();
-      loadTransactions();
-      const id = setInterval(() => {
-        loadWalletData();
-      }, 15000);
-      return () => clearInterval(id);
-    }
-  }, [user]);
+  // Use the wallet data and transactions hooks
+  const {
+    data: walletData,
+    isLoading: isLoadingWallet,
+    error: walletError,
+    refetch: refetchWalletData
+  } = useWalletData();
 
-  const loadWalletData = async () => {
-    try {
-      setLoading(true);
+  const { 
+    data: transactions = [],
+    isLoading: isLoadingTransactions,
+    error: transactionsError,
+    refetch: refetchTransactions
+  } = useWalletTransactions();
 
-      const response = await fetch(
-        `${process.env.BACKEND_URL}/wallet/balance`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const data = await response.json();
-
-      if (!data || !data.fiatBalances || !data.cryptoBalances) {
-        throw new Error("Invalid wallet data received");
-      }
-
-      setWalletData(data);
-    } catch (error) {
-      console.error("Failed to load wallet data:", error);
+  // Handle errors
+  React.useEffect(() => {
+    if (walletError) {
+      console.error("Failed to load wallet data:", walletError);
       addToast("Failed to load wallet data", "error");
-    } finally {
-      setLoading(false);
     }
-  };
 
-  const loadTransactions = async () => {
-    try {
-      // TODO: Replace with actual API call
-      const mockTransactions: WalletTransaction[] = [
-        {
-          id: "1",
-          type: "fiat",
-          currency: "NGN",
-          amount: 25000,
-          status: "completed",
-          reference: "DEP_001",
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: "2",
-          type: "crypto",
-          currency: "STRK",
-          amount: 50,
-          status: "completed",
-          reference: "BRIDGE_001",
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-        },
-      ];
-
-      setTransactions(mockTransactions);
-    } catch (error) {
-      console.error("Failed to load transactions:", error);
+    if (transactionsError) {
+      console.error("Failed to load transactions:", transactionsError);
+      addToast("Failed to load transactions", "error");
     }
+  }, [walletError, transactionsError, addToast]);
+
+  // Slice transactions for display (first 2 for overview, all for transactions tab)
+  const recentTransactions = useMemo(() => transactions.slice(0, 2), [transactions]);
+  const allTransactionsList = useMemo(() => transactions, [transactions]);
+
+  const loading = isLoadingWallet || isLoadingTransactions || !walletData;
+
+  // Refetch function that can be called manually
+  const handleRefresh = async () => {
+    await Promise.all([refetchWalletData(), refetchTransactions()]);
+    addToast("Wallet data refreshed", "success");
   };
 
   const handleBridgeLiquidity = () => {
@@ -169,6 +115,28 @@ const UnifiedWallet = () => {
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (walletError || transactionsError) {
+    return (
+      <div className="text-center p-6 bg-red-900/20 border border-red-700 rounded-lg">
+        <h3 className="text-lg font-medium text-red-400 mb-2">Failed to load wallet data</h3>
+        <p className="text-red-300 mb-4">
+          {walletError?.message || transactionsError?.message || 'An unknown error occurred'}
+        </p>
+        <Button 
+          onClick={() => {
+            if (walletError) refetchWalletData();
+            if (transactionsError) refetchTransactions();
+          }}
+          variant="outline"
+          className="border-red-500 text-red-400 hover:bg-red-900/50"
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Retry
+        </Button>
       </div>
     );
   }
@@ -417,7 +385,7 @@ const UnifiedWallet = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {transactions.map((tx) => (
+            {recentTransactions.map((tx: WalletTransaction) => (
               <div
                 key={tx.id}
                 className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg"

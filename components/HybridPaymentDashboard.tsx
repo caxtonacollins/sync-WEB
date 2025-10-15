@@ -1,28 +1,29 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/contexts/ToastContext';
-import { 
-  CreditCardIcon, 
-  CurrencyDollarIcon, 
+import React, { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
+import {
+  CreditCardIcon,
+  CurrencyDollarIcon,
   QrCodeIcon,
   ArrowPathIcon,
   ShieldCheckIcon,
-  BoltIcon
-} from '@heroicons/react/24/outline';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { paymentProcessor } from '@/lib/payment-processor';
-import { liquidityBridge } from '@/lib/liquidity-bridge';
-import TransferModal from '@/components/transfer/TransferModal';
-import BridgeLiquidityModal from '@/components/modals/BridgeLiquidityModal';
-import StakeSyncModal from '@/components/modals/StakeSyncModal';
-import ManageLiquidityModal from '@/components/modals/ManageLiquidityModal';
-import ViewSettlementsModal from '@/components/modals/ViewSettlementsModal';
-import GenerateQRModal from '@/components/modals/GenerateQRModal';
-import ScanQRModal from '@/components/modals/ScanQRModal';
+  BoltIcon,
+} from "@heroicons/react/24/outline";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { paymentProcessor } from "@/lib/payment-processor";
+import { liquidityBridge } from "@/lib/liquidity-bridge";
+import TransferModal from "@/components/transfer/TransferModal";
+import BridgeLiquidityModal from "@/components/modals/BridgeLiquidityModal";
+import StakeSyncModal from "@/components/modals/StakeSyncModal";
+import ManageLiquidityModal from "@/components/modals/ManageLiquidityModal";
+import ViewSettlementsModal from "@/components/modals/ViewSettlementsModal";
+import GenerateQRModal from "@/components/modals/GenerateQRModal";
+import ScanQRModal from "@/components/modals/ScanQRModal";
+import { useWalletSummary } from "@/hooks/useWalletData";
 
 interface PaymentSystemMetrics {
   fiatBalanceNGN: number;
@@ -38,9 +39,15 @@ interface PaymentSystemMetrics {
 export default function HybridPaymentDashboard() {
   const { user } = useAuth();
   const { addToast } = useToast();
-  const [metrics, setMetrics] = useState<PaymentSystemMetrics | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   
+  // Use the wallet summary hook
+  const { 
+    data: metrics, 
+    isLoading, 
+    error,
+    refetch: refetchWalletSummary 
+  } = useWalletSummary();
+
   // Modal states
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showBridgeModal, setShowBridgeModal] = useState(false);
@@ -50,40 +57,12 @@ export default function HybridPaymentDashboard() {
   const [showGenerateQRModal, setShowGenerateQRModal] = useState(false);
   const [showScanQRModal, setShowScanQRModal] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      loadPaymentMetrics();
+  // Handle error state
+  React.useEffect(() => {
+    if (error) {
+      addToast("Unable to load payment system data", "error");
     }
-  }, [user]);
-
-  const loadPaymentMetrics = async () => {
-    try {
-      setIsLoading(true);
-      
-      // TODO: Replace with actual API call to /api/wallet/summary
-      // const response = await fetch('/api/wallet/summary', {
-      //   headers: { Authorization: `Bearer ${token}` }
-      // });
-      // const data = await response.json();
-      
-      const mockMetrics: PaymentSystemMetrics = {
-        fiatBalanceNGN: 125000,
-        cryptoValueUSD: 450,
-        syncTokenBalance: 2500,
-        stakedSyncTokens: 1000,
-        totalPortfolioValueNGN: 845000,
-        transactionFeeDiscount: 15,
-        activeLiquidityPools: 3,
-        dailySettlementCount: 127
-      };
-      
-      setMetrics(mockMetrics);
-    } catch (error) {
-      addToast('Unable to load payment system data', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [error, addToast]);
 
   const initiatePayment = () => {
     setShowTransferModal(true);
@@ -97,11 +76,11 @@ export default function HybridPaymentDashboard() {
     setShowStakeModal(true);
   };
 
-  if (isLoading) {
+  if (isLoading && !metrics) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => (
+          {[1, 2, 3].map((i) => (
             <div key={i} className="bg-gray-800 p-6 rounded-xl animate-pulse">
               <div className="h-4 bg-gray-700 rounded w-1/3 mb-4"></div>
               <div className="h-8 bg-gray-700 rounded w-1/2"></div>
@@ -119,8 +98,12 @@ export default function HybridPaymentDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Hybrid Payment System</h2>
-          <p className="text-gray-400">Seamless fiat-to-crypto payments powered by StarkNet</p>
+          <h2 className="text-2xl font-bold text-white">
+            Hybrid Payment System
+          </h2>
+          <p className="text-gray-400">
+            Seamless fiat-to-crypto payments powered by StarkNet
+          </p>
         </div>
         <Badge variant="outline" className="border-purple-500 text-purple-400">
           <BoltIcon className="h-4 w-4 mr-1" />
@@ -142,9 +125,11 @@ export default function HybridPaymentDashboard() {
             <div className="text-2xl font-bold text-white">
               ₦{metrics.fiatBalanceNGN.toLocaleString()}
             </div>
-            <p className="text-sm text-gray-400">Available for instant payments</p>
-            <Button 
-              size="sm" 
+            <p className="text-sm text-gray-400">
+              Available for instant payments
+            </p>
+            <Button
+              size="sm"
               className="mt-3 bg-blue-600 hover:bg-blue-700"
               onClick={initiatePayment}
             >
@@ -166,8 +151,8 @@ export default function HybridPaymentDashboard() {
               ${metrics.cryptoValueUSD.toLocaleString()}
             </div>
             <p className="text-sm text-gray-400">Auto-bridging enabled</p>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               className="mt-3 bg-purple-600 hover:bg-purple-700"
               onClick={toggleBridgeInterface}
             >
@@ -191,8 +176,8 @@ export default function HybridPaymentDashboard() {
             <p className="text-sm text-gray-400">
               {metrics.transactionFeeDiscount}% fee discount
             </p>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               className="mt-3 bg-green-600 hover:bg-green-700"
               onClick={openStakingInterface}
             >
@@ -215,7 +200,9 @@ export default function HybridPaymentDashboard() {
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-gray-400">Available Pools:</span>
-              <span className="text-white font-semibold">{metrics.activeLiquidityPools}</span>
+              <span className="text-white font-semibold">
+                {metrics.activeLiquidityPools}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-400">Auto-bridging:</span>
@@ -225,7 +212,7 @@ export default function HybridPaymentDashboard() {
               <span className="text-gray-400">Network:</span>
               <Badge className="bg-purple-900 text-purple-400">StarkNet</Badge>
             </div>
-            <Button 
+            <Button
               className="w-full bg-blue-600 hover:bg-blue-700"
               onClick={() => setShowManageLiquidityModal(true)}
             >
@@ -245,7 +232,9 @@ export default function HybridPaymentDashboard() {
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-gray-400">Settlements Today:</span>
-              <span className="text-white font-semibold">{metrics.dailySettlementCount}</span>
+              <span className="text-white font-semibold">
+                {metrics.dailySettlementCount}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-400">Average Time:</span>
@@ -255,7 +244,7 @@ export default function HybridPaymentDashboard() {
               <span className="text-gray-400">Success Rate:</span>
               <Badge className="bg-green-900 text-green-400">99.8%</Badge>
             </div>
-            <Button 
+            <Button
               className="w-full bg-yellow-600 hover:bg-yellow-700"
               onClick={() => setShowSettlementsModal(true)}
             >
@@ -289,14 +278,14 @@ export default function HybridPaymentDashboard() {
             </div>
           </div>
           <div className="flex space-x-2">
-            <Button 
+            <Button
               className="flex-1 bg-purple-600 hover:bg-purple-700"
               onClick={() => setShowGenerateQRModal(true)}
             >
               Generate QR Code
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
               onClick={() => setShowScanQRModal(true)}
             >
@@ -324,34 +313,34 @@ export default function HybridPaymentDashboard() {
       </Card>
 
       {/* All Modals */}
-      <TransferModal 
-        isOpen={showTransferModal} 
-        onClose={() => setShowTransferModal(false)} 
+      <TransferModal
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
       />
-      <BridgeLiquidityModal 
-        isOpen={showBridgeModal} 
-        onClose={() => setShowBridgeModal(false)} 
+      <BridgeLiquidityModal
+        isOpen={showBridgeModal}
+        onClose={() => setShowBridgeModal(false)}
       />
-      <StakeSyncModal 
-        isOpen={showStakeModal} 
+      <StakeSyncModal
+        isOpen={showStakeModal}
         onClose={() => setShowStakeModal(false)}
         availableBalance={metrics.syncTokenBalance}
       />
-      <ManageLiquidityModal 
-        isOpen={showManageLiquidityModal} 
-        onClose={() => setShowManageLiquidityModal(false)} 
+      <ManageLiquidityModal
+        isOpen={showManageLiquidityModal}
+        onClose={() => setShowManageLiquidityModal(false)}
       />
-      <ViewSettlementsModal 
-        isOpen={showSettlementsModal} 
-        onClose={() => setShowSettlementsModal(false)} 
+      <ViewSettlementsModal
+        isOpen={showSettlementsModal}
+        onClose={() => setShowSettlementsModal(false)}
       />
-      <GenerateQRModal 
-        isOpen={showGenerateQRModal} 
-        onClose={() => setShowGenerateQRModal(false)} 
+      <GenerateQRModal
+        isOpen={showGenerateQRModal}
+        onClose={() => setShowGenerateQRModal(false)}
       />
-      <ScanQRModal 
-        isOpen={showScanQRModal} 
-        onClose={() => setShowScanQRModal(false)} 
+      <ScanQRModal
+        isOpen={showScanQRModal}
+        onClose={() => setShowScanQRModal(false)}
       />
     </div>
   );

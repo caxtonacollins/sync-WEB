@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
+import { useWalletStats } from "@/hooks/api";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import AdminLayout from "@/components/admin/AdminLayout";
 import {
@@ -24,39 +25,18 @@ interface WalletStats {
 }
 
 export default function WalletManagementPage() {
-  const { token } = useAuth();
   const { addToast } = useToast();
-  const [stats, setStats] = useState<WalletStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
+  const { data: stats, isLoading, isError } = useWalletStats();
+
   useEffect(() => {
-    loadWalletStats();
-  }, []);
-
-  const loadWalletStats = async () => {
-    try {
-      setLoading(true);
-
-      // Mock data - replace with actual API call
-      const mockStats: WalletStats = {
-        totalFiatWallets: 1543,
-        totalCryptoWallets: 797,
-        totalFiatBalance: 125000000,
-        totalCryptoBalance: 450000,
-        activeWallets: 2198,
-        suspendedWallets: 142,
-      };
-
-      setStats(mockStats);
-    } catch (error) {
+    if (isError) {
       addToast("Failed to load wallet statistics", "error");
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [isError, addToast]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <AdminProtectedRoute>
         <AdminLayout>
@@ -192,7 +172,9 @@ export default function WalletManagementPage() {
           {/* Recent Activity */}
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
-              <CardTitle className="text-white">Recent Wallet Activity</CardTitle>
+              <CardTitle className="text-white">
+                Recent Wallet Activity
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">

@@ -1,97 +1,127 @@
-'use client';
+"use client";
 
-import React, { useState, useRef } from 'react';
-import { XMarkIcon, QrCodeIcon, CameraIcon, CheckCircleIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/contexts/ToastContext';
+import React, { useState, useRef } from "react";
+import {
+  XMarkIcon,
+  QrCodeIcon,
+  CameraIcon,
+  CheckCircleIcon,
+  DocumentTextIcon,
+} from "@heroicons/react/24/outline";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/contexts/ToastContext";
+import {
+  useDecodeQR,
+  useDecodePaymentCode,
+  useProcessPayment,
+  type PaymentRequest,
+} from "@/hooks/api";
 
 interface ScanQRModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface PaymentRequest {
-  type: string;
-  recipient: string;
-  recipientName: string;
-  amount: number;
-  currency: string;
-  description: string;
-  timestamp: number;
-  network: string;
-}
-
 const ScanQRModal: React.FC<ScanQRModalProps> = ({ isOpen, onClose }) => {
   const { addToast } = useToast();
-  const [step, setStep] = useState<'scan' | 'confirm' | 'processing' | 'success'>('scan');
+  const [step, setStep] = useState<
+    "scan" | "confirm" | "processing" | "success"
+  >("scan");
   const [paymentData, setPaymentData] = useState<PaymentRequest | null>(null);
-  const [manualCode, setManualCode] = useState('');
+  const [manualCode, setManualCode] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Simulate QR code scanning
-  const handleScan = () => {
-    // Mock payment data (in production, this would come from actual QR scanning)
-    const mockPaymentData: PaymentRequest = {
-      type: 'sync_payment',
-      recipient: 'merchant123',
-      recipientName: 'Coffee Shop ABC',
-      amount: 2500,
-      currency: 'NGN',
-      description: 'Coffee and pastries',
-      timestamp: Date.now(),
-      network: 'StarkNet'
-    };
+  const { mutate: decodeQR, isPending: isDecodingQR } = useDecodeQR();
+  const { mutate: decodeCode, isPending: isDecodingCode } =
+    useDecodePaymentCode();
+  const { mutate: processPayment, isPending: isProcessing } =
+    useProcessPayment();
 
-    setPaymentData(mockPaymentData);
-    setStep('confirm');
-    addToast('QR Code scanned successfully', 'success');
+  // Handle camera-based QR code scanning
+  const handleCameraScan = () => {
+    // Here you would typically integrate with a QR code scanner library
+    // For now, let's simulate scanning with a mock QR code
+    decodeQR("mockQRCode", {
+      onSuccess: (data) => {
+        setPaymentData(data);
+        setStep("confirm");
+        addToast("QR Code scanned successfully", "success");
+      },
+      onError: () => {
+        addToast("Invalid QR code", "error");
+      },
+    });
   };
 
   // Handle manual code entry
   const handleManualEntry = () => {
     if (!manualCode) {
-      addToast('Please enter a payment code', 'error');
+      addToast("Please enter a payment code", "error");
       return;
     }
 
-    try {
-      const decoded = JSON.parse(atob(manualCode));
-      setPaymentData(decoded);
-      setStep('confirm');
-      addToast('Payment code validated', 'success');
-    } catch (error) {
-      addToast('Invalid payment code', 'error');
-    }
+    decodeCode(manualCode, {
+      onSuccess: (data) => {
+        setPaymentData(data);
+        setStep("confirm");
+        addToast("Payment code validated", "success");
+      },
+      onError: () => {
+        addToast("Invalid payment code", "error");
+      },
+    });
   };
 
   // Handle file upload (QR image)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In production, use a QR code reader library to decode the image
-      addToast('Processing QR code image...', 'info');
-      setTimeout(() => {
-        handleScan(); // Mock successful scan
-      }, 1500);
+      try {
+        // Convert image to base64
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64Data = event.target?.result as string;
+          addToast("Processing QR code image...", "info");
+          decodeQR(base64Data, {
+            onSuccess: (data) => {
+              setPaymentData(data);
+              setStep("confirm");
+              addToast("QR Code scanned successfully", "success");
+            },
+            onError: () => {
+              addToast("Failed to process QR code image", "error");
+            },
+          });
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        addToast("Failed to process QR code image", "error");
+      }
     }
   };
 
-  const confirmPayment = async () => {
-    setStep('processing');
-    
-    // Simulate payment processing
-    setTimeout(() => {
-      setStep('success');
-      addToast('Payment completed successfully!', 'success');
-    }, 3000);
+  const confirmPayment = () => {
+    if (!paymentData) return;
+
+    setStep("processing");
+    processPayment(paymentData, {
+      onSuccess: () => {
+        setStep("success");
+        addToast("Payment completed successfully!", "success");
+      },
+      onError: () => {
+        setStep("confirm");
+        addToast("Payment failed. Please try again.", "error");
+      },
+    });
   };
 
   const handleClose = () => {
-    setStep('scan');
+    setStep("scan");
     setPaymentData(null);
-    setManualCode('');
+    setManualCode("");
     onClose();
   };
 
@@ -107,13 +137,16 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ isOpen, onClose }) => {
               <QrCodeIcon className="h-6 w-6 text-purple-400 mr-2" />
               <h2 className="text-2xl font-bold text-white">Scan QR Code</h2>
             </div>
-            <button onClick={handleClose} className="text-gray-400 hover:text-white transition-colors">
+            <button
+              onClick={handleClose}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
               <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
 
           {/* Scan Step */}
-          {step === 'scan' && (
+          {step === "scan" && (
             <div className="space-y-6">
               {/* Camera View (Simulated) */}
               <div className="relative bg-gray-800 rounded-lg overflow-hidden aspect-square">
@@ -123,16 +156,18 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ isOpen, onClose }) => {
                     <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-purple-400"></div>
                     <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-purple-400"></div>
                     <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-purple-400"></div>
-                    
+
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center">
                         <CameraIcon className="h-16 w-16 text-gray-600 mx-auto mb-2" />
-                        <p className="text-gray-500 text-sm">Position QR code here</p>
+                        <p className="text-gray-500 text-sm">
+                          Position QR code here
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Scanning line animation */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-64 h-1 bg-purple-500 animate-pulse"></div>
@@ -141,7 +176,7 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ isOpen, onClose }) => {
 
               <div className="space-y-3">
                 <Button
-                  onClick={handleScan}
+                  onClick={handleCameraScan}
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white py-6 text-lg"
                 >
                   <CameraIcon className="h-6 w-6 mr-2" />
@@ -196,13 +231,15 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ isOpen, onClose }) => {
           )}
 
           {/* Confirm Payment */}
-          {step === 'confirm' && paymentData && (
+          {step === "confirm" && paymentData && (
             <div className="space-y-6">
               <div className="text-center py-6">
                 <div className="w-16 h-16 bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <QrCodeIcon className="h-8 w-8 text-purple-400" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Confirm Payment</h3>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Confirm Payment
+                </h3>
                 <p className="text-gray-400">Review payment details</p>
               </div>
 
@@ -217,7 +254,9 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ isOpen, onClose }) => {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-400">Recipient:</span>
-                    <span className="text-white font-semibold">{paymentData.recipientName}</span>
+                    <span className="text-white font-semibold">
+                      {paymentData.recipientName}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Currency:</span>
@@ -225,7 +264,9 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ isOpen, onClose }) => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Network:</span>
-                    <Badge className="bg-purple-900 text-purple-400">{paymentData.network}</Badge>
+                    <Badge className="bg-purple-900 text-purple-400">
+                      {paymentData.network}
+                    </Badge>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Settlement:</span>
@@ -246,7 +287,7 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ isOpen, onClose }) => {
 
               <div className="flex space-x-3">
                 <Button
-                  onClick={() => setStep('scan')}
+                  onClick={() => setStep("scan")}
                   variant="outline"
                   className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
                 >
@@ -263,22 +304,30 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ isOpen, onClose }) => {
           )}
 
           {/* Processing */}
-          {step === 'processing' && (
+          {step === "processing" && (
             <div className="text-center py-12">
               <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-              <h3 className="text-xl font-bold text-white mb-2">Processing Payment</h3>
-              <p className="text-gray-400">Please wait while we process your payment...</p>
-              <p className="text-sm text-gray-500 mt-4">This usually takes 1-2 seconds</p>
+              <h3 className="text-xl font-bold text-white mb-2">
+                Processing Payment
+              </h3>
+              <p className="text-gray-400">
+                Please wait while we process your payment...
+              </p>
+              <p className="text-sm text-gray-500 mt-4">
+                This usually takes 1-2 seconds
+              </p>
             </div>
           )}
 
           {/* Success */}
-          {step === 'success' && paymentData && (
+          {step === "success" && paymentData && (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircleIcon className="h-10 w-10 text-green-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Payment Successful!</h3>
+              <h3 className="text-xl font-bold text-white mb-2">
+                Payment Successful!
+              </h3>
               <p className="text-gray-400 mb-6">
                 Your payment to {paymentData.recipientName} was successful
               </p>
@@ -286,7 +335,9 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ isOpen, onClose }) => {
                 <div className="text-3xl font-bold text-green-400 mb-1">
                   ₦{paymentData.amount.toLocaleString()}
                 </div>
-                <div className="text-sm text-gray-400">Paid via SYNC Instant</div>
+                <div className="text-sm text-gray-400">
+                  Paid via SYNC Instant
+                </div>
                 <div className="text-xs text-gray-500 mt-2">
                   Settled in 1.2 seconds
                 </div>

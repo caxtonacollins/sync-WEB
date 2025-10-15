@@ -1,10 +1,11 @@
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
+import api from "../index";
 import type { LoginResponse } from "../server-calls";
 
 export const loginApi = async (email: string, password: string): Promise<LoginResponse | { error: string }> => {
   try {
-    const response = await axios.post<LoginResponse>(
-      `${process.env.BACKEND_URL}/auth/login`,
+    const response = await api.post<LoginResponse>(
+      "/auth/login",
       { email, password },
       { headers: { "Content-Type": "application/json" } }
     );
@@ -16,15 +17,15 @@ export const loginApi = async (email: string, password: string): Promise<LoginRe
 };
 
 export const generate2FA = async (token: string) => {
-  const response = await axios.get(`${process.env.BACKEND_URL}/auth/2fa/generate`, {
+  const response = await api.get("/auth/2fa/generate", {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
 export const enable2FA = async (code: string, token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/auth/2fa/enable`,
+  const response = await api.post(
+    "/auth/2fa/enable",
     { code },
     { headers: { Authorization: `Bearer ${token}` } }
   );
@@ -32,8 +33,8 @@ export const enable2FA = async (code: string, token: string) => {
 };
 
 export const verify2FA = async (code: string, token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/auth/2fa/verify`,
+  const response = await api.post(
+    "/auth/2fa/verify",
     { code },
     { headers: { Authorization: `Bearer ${token}` } }
   );
@@ -41,8 +42,8 @@ export const verify2FA = async (code: string, token: string) => {
 };
 
 export const disable2FA = async (token: string) => {
-  const response = await axios.post(
-    `${process.env.BACKEND_URL}/auth/2fa/disable`,
+  const response = await api.post(
+    "/auth/2fa/disable",
     {},
     { headers: { Authorization: `Bearer ${token}` } }
   );
@@ -51,14 +52,14 @@ export const disable2FA = async (token: string) => {
 
 export const refreshTokenApi = async (refreshToken: string) => {
   try {
-    const response = await axios.post(
-      `${process.env.BACKEND_URL}/auth/refresh`,
-      { refresh_token: refreshToken },
+    const response = await api.post(
+      "/auth/refresh-token",
+      { refreshToken },
       { headers: { "Content-Type": "application/json" } }
     );
-    return response.data;
-  } catch (err) {
-    const error = err as AxiosError<{ message?: string }>;
-    throw new Error(error.response?.data?.message || error.message || "Token refresh failed");
+    return response.data as { accessToken: string; refreshToken: string };
+  } catch (error) {
+    console.error("Error refreshing token:", error);
+    throw error;
   }
 };

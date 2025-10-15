@@ -1,15 +1,42 @@
-'use client';
+"use client";
 
-import React, { useMemo, useState } from 'react';
-import { XMarkIcon, ArrowPathIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/contexts/ToastContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { transferToken, transferFiat } from '@/api/routes/transfers';
-import { executeSwap } from '@/api/routes/swaps';
-import { SwapType } from '@/enums';
+import React, { useMemo, useState } from "react";
+import {
+  XMarkIcon,
+  ArrowPathIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/contexts/ToastContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { transferToken, transferFiat } from "@/api/routes/transfers";
+import { executeSwap } from "@/api/routes/swaps";
+import { SwapType } from "@/enums";
+import { useWalletBalances } from "@/hooks/use-wallet-balances";
+import { useExchangeRates } from "@/hooks/use-exchange-rates";
+
+interface TokenItem {
+  id: string;
+  name: string;
+  balance: number;
+  isActive: boolean;
+}
+
+interface FiatItem {
+  id: string;
+  name: string;
+  balance: number;
+  isActive: boolean;
+}
+
+interface ExchangeRate {
+  fiatSymbol: string;
+  tokenSymbol: string;
+  rate: number;
+  lastUpdated: string;
+}
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -19,50 +46,79 @@ interface PaymentModalProps {
 const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
   const { addToast } = useToast();
   const { token, user } = useAuth();
-  const [mode, setMode] = useState<'swap' | 'transfer'>('swap');
-  const [direction, setDirection] = useState<'tokenToFiat' | 'fiatToToken'>('tokenToFiat');
-  const [transferType, setTransferType] = useState<'tokenToToken' | 'fiatToFiat'>('tokenToToken');
-  const [recipientAddress, setRecipientAddress] = useState('');
-  const [amount, setAmount] = useState('');
-  const [selectedToken, setSelectedToken] = useState('USDC/USD');
-  const [selectedFiat, setSelectedFiat] = useState('USD');
-  const [step, setStep] = useState<'select' | 'confirm' | 'processing' | 'success'>('select');
+  const [mode, setMode] = useState<"swap" | "transfer">("swap");
+  const [direction, setDirection] = useState<"tokenToFiat" | "fiatToToken">(
+    "tokenToFiat"
+  );
+  const [transferType, setTransferType] = useState<
+    "tokenToToken" | "fiatToFiat"
+  >("tokenToToken");
+  const [recipientAddress, setRecipientAddress] = useState("");
+  const [amount, setAmount] = useState("");
+  const [selectedToken, setSelectedToken] = useState("USDC/USD");
+  const [selectedFiat, setSelectedFiat] = useState("USD");
+  const [step, setStep] = useState<
+    "select" | "confirm" | "processing" | "success"
+  >("select");
 
-  //user available tokens
-  const availableToken = [
-    { id: 'BTC/USD', name: 'BTC', balance: 1000, available: true },
-    { id: 'USDC/USD', name: 'USDC', balance: 1000, available: true },
-    { id: 'STRK/USD', name: 'STRK', balance: 1000, available: true },
-    { id: 'ETH/USD', name: 'ETH', balance: 1000, available: true },
-  ];
+  // Get wallet balances from TanStack Query
+  const { data: walletData, isLoading: isLoadingWallets } = useWalletBalances();
 
-  //user available fiat
-  const availableFiat = [
-    { id: 'NGN', name: 'NGN', balance: 1000, available: true },
-    { id: 'USD', name: 'USD', balance: 1000, available: true },
-  ];
+  // Convert wallet data to UI format
+  const availableToken = useMemo(
+    () =>
+      walletData?.cryptoBalances.map((balance) => ({
+        id: `${balance.currency}/USD`,
+        name: balance.currency,
+        balance: balance.balance,
+        isActive: true,
+      })) || [],
+    [walletData]
+  );
 
-  // simple static rates for UI (replace by backend pricing later)
-  const rates = useMemo(() => ({
-    // token -> USD
-    'BTC/USD': 124367,
-    'ETH/USD': 4578,
-    'USDC/USD': 1,
-    'STRK/USD': 0.161,
-    // USD -> NGN
-    USD_NGN: 1600,
-  }), []);
+  const availableFiat = useMemo(
+    () =>
+      walletData?.fiatBalances.map((balance) => ({
+        id: balance.currency,
+        name: balance.currency,
+        balance: balance.balance,
+        isActive: true,
+      })) || [],
+    [walletData]
+  );
+
+  // Get live exchange rates
+  const { data: exchangeRates } = useExchangeRates();
+
+  // Build rates object from live data
+  const rates = useMemo(() => {
+    const ratesObj: Record<string, number> = {};
+
+    if (exchangeRates) {
+      exchangeRates.forEach((rate: ExchangeRate) => {
+        if (rate.fiatSymbol === "USD") {
+          ratesObj[`${rate.tokenSymbol}/USD`] = rate.rate;
+        } else if (rate.fiatSymbol === "NGN" && rate.tokenSymbol === "USD") {
+          ratesObj.USD_NGN = rate.rate;
+        }
+      });
+    }
+
+    return ratesObj;
+  }, [exchangeRates]);
 
   const estimated = useMemo(() => {
-    const amt = parseFloat(amount || '0');
-    if (!amt || Number.isNaN(amt)) return '0';
-    if (mode === 'swap') {
-      if (direction === 'tokenToFiat') {
+    const amt = parseFloat(amount || "0");
+    if (!amt || Number.isNaN(amt)) return "0";
+    if (mode === "swap") {
+      if (direction === "tokenToFiat") {
         const usd = amt * (rates[selectedToken as keyof typeof rates] || 0);
-        return selectedFiat === 'USD' ? usd.toFixed(2) : (usd * rates.USD_NGN).toFixed(2);
+        return selectedFiat === "USD"
+          ? usd.toFixed(2)
+          : (usd * rates.USD_NGN).toFixed(2);
       } else {
         // fiat -> token
-        const usd = selectedFiat === 'USD' ? amt : amt / rates.USD_NGN;
+        const usd = selectedFiat === "USD" ? amt : amt / rates.USD_NGN;
         const price = rates[selectedToken as keyof typeof rates] || 1;
         const tokenOut = price ? usd / price : 0;
         return tokenOut.toFixed(6);
@@ -74,68 +130,80 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
 
   const handleContinue = () => {
     if (!amount || parseFloat(amount) <= 0) {
-      addToast('Please enter a valid amount', 'error');
+      addToast("Please enter a valid amount", "error");
       return;
     }
-    setStep('confirm');
+    setStep("confirm");
   };
 
   const confirmTransaction = async () => {
-    setStep('processing');
+    setStep("processing");
 
     if (!token) {
-      addToast('Authentication token not found.', 'error');
-      setStep('select');
+      addToast("Authentication token not found.", "error");
+      setStep("select");
       return;
     }
 
     try {
-      if (mode === 'transfer') {
+      if (mode === "transfer") {
         const payload = {
           toAddress: recipientAddress,
           amount: parseFloat(amount),
-          token: transferType === 'tokenToToken' ? selectedToken.split('/')[0] : selectedFiat,
+          token:
+            transferType === "tokenToToken"
+              ? selectedToken.split("/")[0]
+              : selectedFiat,
         };
 
-        if (transferType === 'tokenToToken') {
+        if (transferType === "tokenToToken") {
           await transferToken(token, payload);
         } else {
           await transferFiat(token, payload);
         }
-      } else if (mode === 'swap') {
+      } else if (mode === "swap") {
         if (!user) {
-          addToast('User not found.', 'error');
-          setStep('select');
+          addToast("User not found.", "error");
+          setStep("select");
           return;
         }
 
         const payload = {
-          fromCurrency: direction === 'tokenToFiat' ? selectedToken.split('/')[0] : selectedFiat,
-          toCurrency: direction === 'tokenToFiat' ? selectedFiat : selectedToken.split('/')[0],
+          fromCurrency:
+            direction === "tokenToFiat"
+              ? selectedToken.split("/")[0]
+              : selectedFiat,
+          toCurrency:
+            direction === "tokenToFiat"
+              ? selectedFiat
+              : selectedToken.split("/")[0],
           fromAmount: parseFloat(amount),
           toAmount: parseFloat(estimated),
           rate: parseFloat(estimated) / parseFloat(amount) || 0,
-          status: 'pending',
+          status: "pending",
           userId: user.id,
           reference: `SWAP_${Date.now()}`,
-          swapType: direction === 'tokenToFiat' ? SwapType.TOKENTOFIAT : SwapType.FIATTOTOKEN,
+          swapType:
+            direction === "tokenToFiat"
+              ? SwapType.TOKENTOFIAT
+              : SwapType.FIATTOTOKEN,
         };
 
         await executeSwap(token, payload);
       }
 
-      setStep('success');
-      addToast('Transaction successful!', 'success');
+      setStep("success");
+      addToast("Transaction successful!", "success");
     } catch (error) {
-      addToast('Transaction failed', 'error');
-      setStep('select');
+      addToast("Transaction failed", "error");
+      setStep("select");
     }
   };
 
   const handleClose = () => {
-    setStep('select');
-    setAmount('');
-    setMode('swap');
+    setStep("select");
+    setAmount("");
+    setMode("swap");
     onClose();
   };
 
@@ -151,35 +219,72 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
               <ArrowPathIcon className="h-6 w-6 text-purple-400 mr-2" />
               <h2 className="text-2xl font-bold text-white">Swap / Transfer</h2>
             </div>
-            <button onClick={handleClose} className="text-gray-400 hover:text-white transition-colors">
+            <button
+              onClick={handleClose}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
               <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
 
           {/* Mode & Direction */}
-          {step === 'select' && (
+          {step === "select" && (
             <div className="mb-4 grid grid-cols-2 gap-2">
-              <button onClick={() => setMode('swap')} className={`py-2 rounded-lg border ${mode === 'swap' ? 'border-purple-500 text-white' : 'border-gray-700 text-gray-300'} bg-gray-800`}>Swap</button>
-              <button onClick={() => setMode('transfer')} className={`py-2 rounded-lg border ${mode === 'transfer' ? 'border-purple-500 text-white' : 'border-gray-700 text-gray-300'} bg-gray-800`}>Transfer</button>
+              <button
+                onClick={() => setMode("swap")}
+                className={`py-2 rounded-lg border ${
+                  mode === "swap"
+                    ? "border-purple-500 text-white"
+                    : "border-gray-700 text-gray-300"
+                } bg-gray-800`}
+              >
+                Swap
+              </button>
+              <button
+                onClick={() => setMode("transfer")}
+                className={`py-2 rounded-lg border ${
+                  mode === "transfer"
+                    ? "border-purple-500 text-white"
+                    : "border-gray-700 text-gray-300"
+                } bg-gray-800`}
+              >
+                Transfer
+              </button>
             </div>
           )}
 
           {/* Select Assets & Amount */}
-          {step === 'select' && (
+          {step === "select" && (
             <div className="space-y-6">
-              {mode === 'swap' && (
+              {mode === "swap" && (
                 <>
                   <div>
-                    <label className="text-sm font-medium text-gray-400 mb-2 block">Select Token</label>
+                    <label className="text-sm font-medium text-gray-400 mb-2 block">
+                      Select Token
+                    </label>
                     <div className="space-y-2">
                       {availableToken.map((t) => (
-                        <div key={t.id} onClick={() => setSelectedToken(t.id)} className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedToken === t.id ? 'border-purple-500 bg-purple-900/20' : 'border-gray-700 bg-gray-800 hover:border-gray-600'}`}>
+                        <div
+                          key={t.id}
+                          onClick={() => setSelectedToken(t.id)}
+                          className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                            selectedToken === t.id
+                              ? "border-purple-500 bg-purple-900/20"
+                              : "border-gray-700 bg-gray-800 hover:border-gray-600"
+                          }`}
+                        >
                           <div className="flex justify-between items-center">
                             <div>
-                              <p className="font-semibold text-white">{t.name}</p>
-                              <p className="text-xs text-gray-400">Balance: {t.balance}</p>
+                              <p className="font-semibold text-white">
+                                {t.name}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Balance: {t.balance}
+                              </p>
                             </div>
-                            <Badge className="bg-purple-900 text-purple-400">Token</Badge>
+                            <Badge className="bg-purple-900 text-purple-400">
+                              Token
+                            </Badge>
                           </div>
                         </div>
                       ))}
@@ -188,18 +293,48 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
                   <div className="flex items-center justify-between">
                     <span className="text-gray-400 text-sm">Direction</span>
                     <div className="flex bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
-                      <button onClick={() => setDirection('tokenToFiat')} className={`px-3 py-1 text-sm ${direction === 'tokenToFiat' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}>Token → Fiat</button>
-                      <button onClick={() => setDirection('fiatToToken')} className={`px-3 py-1 text-sm ${direction === 'fiatToToken' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}>Fiat → Token</button>
+                      <button
+                        onClick={() => setDirection("tokenToFiat")}
+                        className={`px-3 py-1 text-sm ${
+                          direction === "tokenToFiat"
+                            ? "bg-purple-600 text-white"
+                            : "text-gray-300"
+                        }`}
+                      >
+                        Token → Fiat
+                      </button>
+                      <button
+                        onClick={() => setDirection("fiatToToken")}
+                        className={`px-3 py-1 text-sm ${
+                          direction === "fiatToToken"
+                            ? "bg-purple-600 text-white"
+                            : "text-gray-300"
+                        }`}
+                      >
+                        Fiat → Token
+                      </button>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-400 mb-2 block">Select Fiat</label>
+                    <label className="text-sm font-medium text-gray-400 mb-2 block">
+                      Select Fiat
+                    </label>
                     <div className="space-y-2">
                       {availableFiat.map((f) => (
-                        <div key={f.id} onClick={() => setSelectedFiat(f.id)} className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${selectedFiat === f.id ? 'border-purple-500 bg-purple-900/20' : 'border-gray-700 bg-gray-800 hover:border-gray-600'}`}>
+                        <div
+                          key={f.id}
+                          onClick={() => setSelectedFiat(f.id)}
+                          className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                            selectedFiat === f.id
+                              ? "border-purple-500 bg-purple-900/20"
+                              : "border-gray-700 bg-gray-800 hover:border-gray-600"
+                          }`}
+                        >
                           <div className="flex justify-between items-center">
                             <p className="font-semibold text-white">{f.name}</p>
-                            <Badge className="bg-blue-900 text-blue-400">Fiat</Badge>
+                            <Badge className="bg-blue-900 text-blue-400">
+                              Fiat
+                            </Badge>
                           </div>
                         </div>
                       ))}
@@ -208,11 +343,29 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
                 </>
               )}
 
-              {mode === 'transfer' && (
+              {mode === "transfer" && (
                 <>
                   <div className="mb-4 grid grid-cols-2 gap-2">
-                    <button onClick={() => setTransferType('tokenToToken')} className={`py-2 rounded-lg border ${transferType === 'tokenToToken' ? 'border-purple-500 text-white' : 'border-gray-700 text-gray-300'} bg-gray-800`}>Token → Token</button>
-                    <button onClick={() => setTransferType('fiatToFiat')} className={`py-2 rounded-lg border ${transferType === 'fiatToFiat' ? 'border-purple-500 text-white' : 'border-gray-700 text-gray-300'} bg-gray-800`}>Fiat → Fiat</button>
+                    <button
+                      onClick={() => setTransferType("tokenToToken")}
+                      className={`py-2 rounded-lg border ${
+                        transferType === "tokenToToken"
+                          ? "border-purple-500 text-white"
+                          : "border-gray-700 text-gray-300"
+                      } bg-gray-800`}
+                    >
+                      Token → Token
+                    </button>
+                    <button
+                      onClick={() => setTransferType("fiatToFiat")}
+                      className={`py-2 rounded-lg border ${
+                        transferType === "fiatToFiat"
+                          ? "border-purple-500 text-white"
+                          : "border-gray-700 text-gray-300"
+                      } bg-gray-800`}
+                    >
+                      Fiat → Fiat
+                    </button>
                   </div>
 
                   <div>
@@ -221,40 +374,74 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
                     </label>
                     <input
                       type="text"
-                      placeholder={transferType === 'tokenToToken' ? "Enter Starknet address" : "Enter recipient's email"}
+                      placeholder={
+                        transferType === "tokenToToken"
+                          ? "Enter Starknet address"
+                          : "Enter recipient's email"
+                      }
                       value={recipientAddress}
                       onChange={(e) => setRecipientAddress(e.target.value)}
                       className="w-full p-4 bg-gray-800 border border-gray-700 rounded-lg text-white text-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
 
-                  {transferType === 'tokenToToken' && (
+                  {transferType === "tokenToToken" && (
                     <div>
-                      <label className="text-sm font-medium text-gray-400 mb-2 block">Select Token</label>
+                      <label className="text-sm font-medium text-gray-400 mb-2 block">
+                        Select Token
+                      </label>
                       <div className="space-y-2">
                         {availableToken.map((t) => (
-                          <div key={t.id} onClick={() => setSelectedToken(t.id)} className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedToken === t.id ? 'border-purple-500 bg-purple-900/20' : 'border-gray-700 bg-gray-800 hover:border-gray-600'}`}>
+                          <div
+                            key={t.id}
+                            onClick={() => setSelectedToken(t.id)}
+                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                              selectedToken === t.id
+                                ? "border-purple-500 bg-purple-900/20"
+                                : "border-gray-700 bg-gray-800 hover:border-gray-600"
+                            }`}
+                          >
                             <div className="flex justify-between items-center">
                               <div>
-                                <p className="font-semibold text-white">{t.name}</p>
-                                <p className="text-xs text-gray-400">Balance: {t.balance}</p>
+                                <p className="font-semibold text-white">
+                                  {t.name}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  Balance: {t.balance}
+                                </p>
                               </div>
-                              <Badge className="bg-purple-900 text-purple-400">Token</Badge>
+                              <Badge className="bg-purple-900 text-purple-400">
+                                Token
+                              </Badge>
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
-                  {transferType === 'fiatToFiat' && (
+                  {transferType === "fiatToFiat" && (
                     <div>
-                      <label className="text-sm font-medium text-gray-400 mb-2 block">Select Fiat Currency</label>
+                      <label className="text-sm font-medium text-gray-400 mb-2 block">
+                        Select Fiat Currency
+                      </label>
                       <div className="space-y-2">
                         {availableFiat.map((f) => (
-                          <div key={f.id} onClick={() => setSelectedFiat(f.id)} className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${selectedFiat === f.id ? 'border-purple-500 bg-purple-900/20' : 'border-gray-700 bg-gray-800 hover:border-gray-600'}`}>
+                          <div
+                            key={f.id}
+                            onClick={() => setSelectedFiat(f.id)}
+                            className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                              selectedFiat === f.id
+                                ? "border-purple-500 bg-purple-900/20"
+                                : "border-gray-700 bg-gray-800 hover:border-gray-600"
+                            }`}
+                          >
                             <div className="flex justify-between items-center">
-                              <p className="font-semibold text-white">{f.name}</p>
-                              <Badge className="bg-blue-900 text-blue-400">Fiat</Badge>
+                              <p className="font-semibold text-white">
+                                {f.name}
+                              </p>
+                              <Badge className="bg-blue-900 text-blue-400">
+                                Fiat
+                              </Badge>
                             </div>
                           </div>
                         ))}
@@ -266,7 +453,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
 
               <div>
                 <label className="text-sm font-medium text-gray-400 mb-2 block">
-                  {mode === 'swap' ? (direction === 'tokenToFiat' ? 'Token amount' : `${selectedFiat} amount`) : 'Transfer amount'}
+                  {mode === "swap"
+                    ? direction === "tokenToFiat"
+                      ? "Token amount"
+                      : `${selectedFiat} amount`
+                    : "Transfer amount"}
                 </label>
                 <input
                   type="number"
@@ -276,9 +467,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
                   className="w-full p-4 bg-gray-800 border border-gray-700 rounded-lg text-white text-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
                 <div className="flex justify-between mt-2 text-sm">
-                  <span className="text-gray-400">Estimated: {estimated} {mode === 'swap' ? (direction === 'tokenToFiat' ? selectedFiat : availableToken.find(t => t.id === selectedToken)?.name) : selectedFiat}</span>
+                  <span className="text-gray-400">
+                    Estimated: {estimated}{" "}
+                    {mode === "swap"
+                      ? direction === "tokenToFiat"
+                        ? selectedFiat
+                        : availableToken.find((t) => t.id === selectedToken)
+                            ?.name
+                      : selectedFiat}
+                  </span>
                   <button
-                    onClick={() => setAmount('450')}
+                    onClick={() => setAmount("450")}
                     className="text-purple-400 hover:text-purple-300"
                   >
                     Max
@@ -297,7 +496,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Network:</span>
-                  <Badge className="bg-purple-900 text-purple-400">StarkNet</Badge>
+                  <Badge className="bg-purple-900 text-purple-400">
+                    StarkNet
+                  </Badge>
                 </div>
               </div>
 
@@ -311,30 +512,43 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
           )}
 
           {/* Confirm Transaction */}
-          {step === 'confirm' && (
+          {step === "confirm" && (
             <div className="space-y-6">
               <div className="text-center py-6">
                 <div className="w-16 h-16 bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <ArrowPathIcon className="h-8 w-8 text-purple-400" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Confirm {mode === 'swap' ? 'Swap' : 'Transfer'}</h3>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Confirm {mode === "swap" ? "Swap" : "Transfer"}
+                </h3>
                 <p className="text-gray-400">Review your transaction details</p>
               </div>
 
               <div className="bg-gray-800 p-4 rounded-lg space-y-3">
-                {mode === 'swap' && (
+                {mode === "swap" && (
                   <>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Token:</span>
-                      <span className="text-white font-semibold">{availableToken.find(p => p.id === selectedToken)?.name}</span>
+                      <span className="text-white font-semibold">
+                        {
+                          availableToken.find((p) => p.id === selectedToken)
+                            ?.name
+                        }
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Fiat:</span>
-                      <span className="text-white font-semibold">{selectedFiat}</span>
+                      <span className="text-white font-semibold">
+                        {selectedFiat}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Direction:</span>
-                      <span className="text-white font-semibold">{direction === 'tokenToFiat' ? 'Token → Fiat' : 'Fiat → Token'}</span>
+                      <span className="text-white font-semibold">
+                        {direction === "tokenToFiat"
+                          ? "Token → Fiat"
+                          : "Fiat → Token"}
+                      </span>
                     </div>
                   </>
                 )}
@@ -349,51 +563,72 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
                 <div className="border-t border-gray-700 pt-3 flex justify-between">
                   <span className="text-gray-400">Total:</span>
                   <span className="text-white font-bold text-lg">
-                    {(parseFloat(amount || '0') + 0.5).toFixed(2)}
+                    {(parseFloat(amount || "0") + 0.5).toFixed(2)}
                   </span>
                 </div>
               </div>
 
               <div className="flex space-x-3">
                 <Button
-                  onClick={() => setStep('select')}
+                  onClick={() => setStep("select")}
                   variant="outline"
                   className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
                 >
                   Back
                 </Button>
-                <Button onClick={confirmTransaction} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white">
-                  {mode === 'swap' ? 'Confirm Swap' : 'Confirm Transfer'}
+                <Button
+                  onClick={confirmTransaction}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {mode === "swap" ? "Confirm Swap" : "Confirm Transfer"}
                 </Button>
               </div>
             </div>
           )}
 
           {/* Processing */}
-          {step === 'processing' && (
+          {step === "processing" && (
             <div className="text-center py-12">
               <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-              <h3 className="text-xl font-bold text-white mb-2">Processing Transaction</h3>
-              <p className="text-gray-400">Please wait while we process your transaction...</p>
-              <p className="text-sm text-gray-500 mt-4">This may take up to 30 seconds</p>
+              <h3 className="text-xl font-bold text-white mb-2">
+                Processing Transaction
+              </h3>
+              <p className="text-gray-400">
+                Please wait while we process your transaction...
+              </p>
+              <p className="text-sm text-gray-500 mt-4">
+                This may take up to 30 seconds
+              </p>
             </div>
           )}
 
           {/* Success */}
-          {step === 'success' && (
+          {step === "success" && (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircleIcon className="h-10 w-10 text-green-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">{mode === 'swap' ? 'Swap' : 'Transfer'} Successful!</h3>
+              <h3 className="text-xl font-bold text-white mb-2">
+                {mode === "swap" ? "Swap" : "Transfer"} Successful!
+              </h3>
               <p className="text-gray-400 mb-6">
-                {mode === 'swap'
-                  ? `Completed ${direction === 'tokenToFiat' ? 'Token → Fiat' : 'Fiat → Token'} using ${availableToken.find(p => p.id === selectedToken)?.name}/${selectedFiat}`
+                {mode === "swap"
+                  ? `Completed ${
+                      direction === "tokenToFiat"
+                        ? "Token → Fiat"
+                        : "Fiat → Token"
+                    } using ${
+                      availableToken.find((p) => p.id === selectedToken)?.name
+                    }/${selectedFiat}`
                   : `Your transfer has been processed`}
               </p>
               <div className="bg-gray-800 p-4 rounded-lg mb-6">
-                <div className="text-3xl font-bold text-purple-400 mb-1">{amount}</div>
-                <div className="text-sm text-gray-400">Successfully {mode === 'swap' ? 'Processed' : 'Transferred'}</div>
+                <div className="text-3xl font-bold text-purple-400 mb-1">
+                  {amount}
+                </div>
+                <div className="text-sm text-gray-400">
+                  Successfully {mode === "swap" ? "Processed" : "Transferred"}
+                </div>
               </div>
               <Button
                 onClick={handleClose}

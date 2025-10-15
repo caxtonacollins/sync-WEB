@@ -1,8 +1,8 @@
-import axios from "axios";
+import api from "../index";
 
 export const setPin = async (userId: string, pin: string, token: string) => {
-  const { data } = await axios.patch(
-    `${process.env.BACKEND_URL}/user/${userId}/payment-pin`,
+  const { data } = await api.patch(
+    `/user/${userId}/payment-pin`,
     { pin },
     { headers: { Authorization: `Bearer ${token}` } }
   );
@@ -10,8 +10,8 @@ export const setPin = async (userId: string, pin: string, token: string) => {
 };
 
 export const verifyPin = async (userId: string, pin: string, token: string) => {
-  const { data } = await axios.post(
-    `${process.env.BACKEND_URL}/user/${userId}/payment-pin/verify`,
+  const { data } = await api.post(
+    `/user/${userId}/payment-pin/verify`,
     { pin },
     { headers: { Authorization: `Bearer ${token}` } }
   );
@@ -24,8 +24,8 @@ export const changePin = async (
   newPin: string,
   token: string
 ) => {
-  const { data } = await axios.patch(
-    `${process.env.BACKEND_URL}/user/${userId}/payment-pin/change`,
+  const { data } = await api.patch(
+    `/user/${userId}/payment-pin/change`,
     { oldPin, newPin },
     { headers: { Authorization: `Bearer ${token}` } }
   );

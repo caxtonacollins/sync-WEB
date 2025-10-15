@@ -55,7 +55,7 @@ export default function SwapsPage() {
   });
 
   const statusOptions = ["all", "completed", "pending", "failed"];
-  const currencyOptions = ["USD", "NGN", "ETH", "USDT", "USDC"];
+  const currencyOptions = ["USD", "NGN", "ETH", "USDC"];
 
   useEffect(() => {
     if (token) {

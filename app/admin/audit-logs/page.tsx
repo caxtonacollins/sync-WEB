@@ -3,26 +3,17 @@
 import { useState, useEffect } from "react";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
-import { ClockIcon, MagnifyingGlassIcon, FunnelIcon } from "@heroicons/react/24/outline";
+import {
+  ClockIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+} from "@heroicons/react/24/outline";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/utils/formatters";
-
-interface AuditLog {
-  id: string;
-  userId: string;
-  userEmail: string;
-  action: string;
-  resource: string;
-  ipAddress: string;
-  userAgent: string;
-  status: "success" | "failed";
-  timestamp: string;
-  metadata?: Record<string, any>;
-}
+import { useAuditLogs, type AuditLog } from "@/hooks/api";
 
 const getActionBadge = (action: string) => {
   const actionMap: Record<string, string> = {
@@ -32,84 +23,39 @@ const getActionBadge = (action: string) => {
     login: "bg-purple-900 text-purple-400 border-purple-700",
     logout: "bg-gray-900 text-gray-400 border-gray-700",
   };
-  return actionMap[action.toLowerCase()] || "bg-gray-900 text-gray-400 border-gray-700";
+  return (
+    actionMap[action.toLowerCase()] ||
+    "bg-gray-900 text-gray-400 border-gray-700"
+  );
 };
 
 export default function AuditLogsPage() {
-  const { token } = useAuth();
   const { addToast } = useToast();
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterAction, setFilterAction] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  useEffect(() => {
-    loadAuditLogs();
-  }, []);
+  const { data: logs = [], isLoading, isError } = useAuditLogs();
 
-  const loadAuditLogs = async () => {
-    try {
-      setLoading(true);
-      
-      // Mock data - replace with actual API call
-      const mockLogs: AuditLog[] = [
-        {
-          id: "1",
-          userId: "user-123",
-          userEmail: "admin@syncpay.com",
-          action: "login",
-          resource: "auth",
-          ipAddress: "192.168.1.1",
-          userAgent: "Mozilla/5.0...",
-          status: "success",
-          timestamp: new Date().toISOString(),
-        },
-        {
-          id: "2",
-          userId: "user-456",
-          userEmail: "user@example.com",
-          action: "update",
-          resource: "user_profile",
-          ipAddress: "192.168.1.2",
-          userAgent: "Mozilla/5.0...",
-          status: "success",
-          timestamp: new Date(Date.now() - 300000).toISOString(),
-        },
-        {
-          id: "3",
-          userId: "user-789",
-          userEmail: "test@example.com",
-          action: "create",
-          resource: "transaction",
-          ipAddress: "192.168.1.3",
-          userAgent: "Mozilla/5.0...",
-          status: "failed",
-          timestamp: new Date(Date.now() - 600000).toISOString(),
-        },
-      ];
-      
-      setLogs(mockLogs);
-    } catch (error) {
+  // Show error toast if query fails
+  useEffect(() => {
+    if (isError) {
       addToast("Failed to load audit logs", "error");
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [isError, addToast]);
 
   const filteredLogs = logs.filter((log) => {
     const matchesSearch =
-      log.userEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.action?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.resource?.toLowerCase().includes(searchTerm.toLowerCase());
+      log.entityType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.entityId?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesAction = filterAction === "all" || log.action === filterAction;
-    const matchesStatus = filterStatus === "all" || log.status === filterStatus;
 
-    return matchesSearch && matchesAction && matchesStatus;
+    return matchesSearch && matchesAction;
   });
 
-  if (loading) {
+  if (isLoading) {
     return (
       <AdminProtectedRoute>
         <AdminLayout>
@@ -192,43 +138,51 @@ export default function AuditLogsPage() {
                 <table className="min-w-full">
                   <thead>
                     <tr className="border-b border-gray-700 bg-gray-900">
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Timestamp
+                      <th className="px-6 py-3 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                        Time
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
                         User
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
                         Action
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Resource
+                      <th className="px-6 py-3 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                        Entity Type
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
                         IP Address
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Status
+                      <th className="px-6 py-3 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
+                        Entity ID
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-700">
                     {filteredLogs.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
+                        <td
+                          colSpan={6}
+                          className="px-6 py-8 text-center text-gray-400"
+                        >
                           No audit logs found
                         </td>
                       </tr>
                     ) : (
                       filteredLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-gray-700 transition-colors">
+                        <tr
+                          key={log.id}
+                          className="hover:bg-gray-700 transition-colors"
+                        >
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                            {formatDateTime(log.timestamp)}
+                            {formatDateTime(log.createdAt)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-white">{log.userEmail}</div>
+                            <div className="text-sm text-white">
+                              {log.userId || "System"}
+                            </div>
                             <div className="text-xs text-gray-500 font-mono">
-                              {log.userId.substring(0, 8)}...
+                              {log.id.substring(0, 8)}...
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -237,21 +191,13 @@ export default function AuditLogsPage() {
                             </Badge>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                            {log.resource}
+                            {log.entityType || "Unknown"}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300 font-mono">
-                            {log.ipAddress}
+                            {log.ipAddress || "N/A"}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge
-                              className={
-                                log.status === "success"
-                                  ? "bg-green-900 text-green-400 border-green-700"
-                                  : "bg-red-900 text-red-400 border-red-700"
-                              }
-                            >
-                              {log.status}
-                            </Badge>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                            {log.entityId || "N/A"}
                           </td>
                         </tr>
                       ))

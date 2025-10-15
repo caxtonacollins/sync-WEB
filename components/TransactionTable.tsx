@@ -22,7 +22,7 @@ import { Transaction } from "@/types/types";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 const TRANSACTION_TYPES = ["all", "deposit", "withdrawal", "swap", "transfer"];
-const CURRENCIES = ["all", "USD", "NGN", "ETH", "USDT", "USDC"];
+const CURRENCIES = ["all", "USD", "NGN", "ETH", "USDC"];
 const STATUS_OPTIONS = ["all", "completed", "pending", "failed"];
 
 interface TransactionTableProps {
@@ -230,18 +230,34 @@ export function TransactionTable({
                           : "text-red-400"
                       }`}
                     >
-                      {transaction.currency === "USDC"
-                        ? `USDC ${Math.abs(transaction.amount).toLocaleString(
-                            "en-US",
-                            {
+                      {(() => {
+                        const amount = Math.abs(transaction.amount);
+                        if (transaction.currency === "USDC") {
+                          return `USDC ${amount.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}`;
+                        } else if (transaction.currency.includes("/")) {
+                          // Handle pairs like STRK/USD
+                          return `${amount.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })} ${transaction.currency}`;
+                        } else {
+                          try {
+                            return new Intl.NumberFormat("en-US", {
+                              style: "currency",
+                              currency: transaction.currency,
+                            }).format(amount);
+                          } catch (error) {
+                            // Fallback for invalid currency codes
+                            return `${amount.toLocaleString("en-US", {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
-                            }
-                          )}`
-                        : new Intl.NumberFormat("en-US", {
-                            style: "currency",
-                            currency: transaction.currency,
-                          }).format(Math.abs(transaction.amount))}
+                            })} ${transaction.currency}`;
+                          }
+                        }
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300 capitalize">
                       {transaction.type}

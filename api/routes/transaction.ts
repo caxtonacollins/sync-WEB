@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "../index";
 interface TransactionMetadata {
   provider?: string;
   description?: string;
@@ -48,7 +48,7 @@ export const getAllTransactions = async (
     toDate?: string;
   } = {}
 ) => {
-  const response = await axios.get(`${process.env.BACKEND_URL}/tx`, {
+  const response = await api.get('/tx', {
     headers: { Authorization: `Bearer ${token}` },
     params,
   });
@@ -74,18 +74,15 @@ export const getAllUserTransactions = async (
 
   const { userId, ...queryParams } = params;
 
-  const response = await axios.get<TransactionListResponse>(
-    `${process.env.BACKEND_URL}/tx/user/${userId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      params: queryParams,
-    }
-  );
+  const response = await api.get<TransactionListResponse>(`/tx/user/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    params: queryParams,
+  });
   return response.data;
 };
 
 export const getTransactionById = async (txId: string, token: string) => {
-  const response = await axios.get(`${process.env.BACKEND_URL}/tx/${txId}`, {
+  const response = await api.get(`/tx/${txId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
@@ -96,8 +93,8 @@ export const updateTransaction = async (
   txData: any,
   token: string
 ) => {
-  const response = await axios.patch(
-    `${process.env.BACKEND_URL}/tx/${txId}`,
+  const response = await api.patch(
+    `/tx/${txId}`,
     txData,
     {
       headers: { Authorization: `Bearer ${token}` },
