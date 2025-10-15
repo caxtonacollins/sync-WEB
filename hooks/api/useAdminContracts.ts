@@ -33,19 +33,6 @@ export const useAdminContracts = () => {
   });
 };
 
-export const useEventListenerStatus = () => {
-  return useQuery({
-    queryKey: ADMIN_CONTRACT_KEYS.eventListener(),
-    queryFn: async () => {
-      const { data } = await api.get<EventListenerStatus>(
-        "/contract/event-listener/subscriptions"
-      );
-      return data;
-    },
-    staleTime: 30 * 1000, // 30 seconds - event listener status can change frequently
-  });
-};
-
 export function useUpgradeAccountFactory() {
   return useMutation({
     mutationFn: async (classHash: string) => {

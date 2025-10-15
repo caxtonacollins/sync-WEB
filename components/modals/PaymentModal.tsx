@@ -151,15 +151,16 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
           toAddress: recipientAddress,
           amount: parseFloat(amount),
           token:
-            transferType === "tokenToToken"
-              ? selectedToken.split("/")[0]
-              : selectedFiat,
+          transferType === "tokenToToken"
+          ? selectedToken.split("/")[0]
+          : selectedFiat,
         };
-
+        
+        console.log("payload", payload);
         if (transferType === "tokenToToken") {
-          await transferToken(token, payload);
+          await transferToken(payload);
         } else {
-          await transferFiat(token, payload);
+          await transferFiat(payload);
         }
       } else if (mode === "swap") {
         if (!user) {
@@ -181,7 +182,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
           toAmount: parseFloat(estimated),
           rate: parseFloat(estimated) / parseFloat(amount) || 0,
           status: "pending",
-          userId: user.id,
+          userId: user!.id,
           reference: `SWAP_${Date.now()}`,
           swapType:
             direction === "tokenToFiat"

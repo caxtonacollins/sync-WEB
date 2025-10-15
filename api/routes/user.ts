@@ -1,8 +1,9 @@
 import { User } from "@/types/types";
 import { AxiosError } from "axios";
 import api from "../index";
+import type { UserRegistrationFormData } from "@/lib/validations/validations";
 
-export const createUser = async (userData: any) => {
+export const createUser = async (userData: UserRegistrationFormData) => {
   try {
     const response = await api.post(
       "/user",
@@ -11,16 +12,22 @@ export const createUser = async (userData: any) => {
     );
 
     if (response.status >= 400) {
-      throw new Error(response.data?.message || "Registration failed");
+      throw {
+        response: {
+          data: response.data,
+          status: response.status,
+        },
+      };
     }
 
     return response.data;
   } catch (error: any) {
-    if (error.isAxiosError) {
-      // Forward the error message from the backend
-      throw new Error(error.response?.data?.message || error.message);
+    if (error.response?.data) {
+      throw error;
     }
-    throw error;
+    throw new Error(
+      "Registration failed. Please check your connection and try again."
+    );
   }
 };
 
@@ -32,12 +39,9 @@ export const getAllUsers = async (token: string) => {
 };
 
 export const getUserById = async (userId: string, token: string) => {
-  const response = await api.get(
-    `/user/${userId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  const response = await api.get(`/user/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   // Backend returns { user: {...} }, extract the user object
   return response.data.user || response.data;
 };
@@ -46,22 +50,16 @@ export const getUserByCryptoAddress = async (
   address: string,
   token: string
 ) => {
-  const response = await api.get(
-    `/user/getUserByCryptoAddress/${address}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  const response = await api.get(`/user/getUserByCryptoAddress/${address}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
 export const getUserByEmail = async (email: string, token: string) => {
-  const response = await api.get(
-    `/user/email/${email}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  const response = await api.get(`/user/email/${email}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 export const updateUserProfile = async (
@@ -69,16 +67,12 @@ export const updateUserProfile = async (
   profileData: Partial<User>,
   token: string
 ) => {
-  const response = await api.patch(
-    `/user/${userId}`,
-    profileData,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+  const response = await api.patch(`/user/${userId}`, profileData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
   return response.data;
 };
 
@@ -96,12 +90,9 @@ export const changePassword = async (
 };
 
 export const deleteUser = async (userId: string, token: string) => {
-  const response = await api.delete(
-    `/user/${userId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  const response = await api.delete(`/user/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
@@ -122,17 +113,17 @@ export const getDashboardData = async (userId: string, token: string) => {
   }
 };
 
-export const resolveAccountNumber = async (accountNumber: string, token: string) => {
+export const resolveAccountNumber = async (
+  accountNumber: string,
+  token: string
+) => {
   try {
-    const { data } = await api.get(
-      `/user/resolve/account/${accountNumber}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    const { data } = await api.get(`/user/resolve/account/${accountNumber}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return data;
   } catch (error) {
-    console.error('Error resolving account number:', error);
+    console.error("Error resolving account number:", error);
     throw error;
   }
-}
+};

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { useToast } from "@/contexts/ToastContext";
@@ -15,34 +17,49 @@ import {
 } from "@heroicons/react/24/outline";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  useAdminContracts, 
-  useEventListenerStatus,
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  useAdminContracts,
   useUpgradeAccountFactory,
   useTransferFactoryOwnership,
   useAddSupportedToken,
   useUpgradeLiquidityContract,
   useUpdateOracleAddress,
-  useUnsubscribeAllEvents,
   type ContractInfo,
-  type EventListenerStatus
 } from "@/hooks/api/useAdminContracts";
+import { contractFactorySchema, type ContractFormData } from "@/lib/validations/contract";
 
 export default function ContractsPage() {
   const { addToast } = useToast();
-  const [activeTab, setActiveTab] = useState<"overview" | "factory" | "liquidity" | "events">("overview");
-
-  // Form states
-  const [newClassHash, setNewClassHash] = useState("");
-  const [newOwnerAddress, setNewOwnerAddress] = useState("");
-  const [tokenSymbol, setTokenSymbol] = useState("");
-  const [tokenAddress, setTokenAddress] = useState("");
-  const [oracleAddress, setOracleAddress] = useState("");
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "factory" | "liquidity"
+  >("overview");
   const [processing, setProcessing] = useState(false);
+
+  // Form setup with react-hook-form and zod
+  const form = useForm<ContractFormData>({
+    resolver: zodResolver(contractFactorySchema),
+    defaultValues: {
+      newClassHash: "",
+      newOwnerAddress: "",
+      tokenSymbol: "",
+      tokenAddress: "",
+      oracleAddress: "",
+    },
+  });
 
   // Data fetching
   const { data: contracts, isLoading: loading } = useAdminContracts();
-  const { data: eventListenerStatus } = useEventListenerStatus();
 
   // Mutations
   const { mutateAsync: upgradeAccountFactory } = useUpgradeAccountFactory();
@@ -50,110 +67,320 @@ export default function ContractsPage() {
   const { mutateAsync: addSupportedToken } = useAddSupportedToken();
   const { mutateAsync: upgradeLiquidityContract } = useUpgradeLiquidityContract();
   const { mutateAsync: updateOracleAddress } = useUpdateOracleAddress();
-  const { mutateAsync: unsubscribeAllEvents } = useUnsubscribeAllEvents();
 
-  const handleUpgradeAccountFactory = async () => {
-    if (!newClassHash) {
-      addToast("Please enter a class hash", "error");
-      return;
-    }
-
+  const handleFormSubmit = async (formData: ContractFormData) => {
     try {
       setProcessing(true);
-      await upgradeAccountFactory(newClassHash);
-      addToast("Account factory upgraded successfully", "success");
-      setNewClassHash("");
-    } catch (error) {
-      addToast("Failed to upgrade account factory", "error");
+
+      switch (activeTab) {
+        case "factory":
+          if (formData.newClassHash) {
+            await upgradeAccountFactory(formData.newClassHash);
+            addToast("Account factory upgraded successfully", "success");
+            form.reset({ newClassHash: "" });
+          } else if (formData.newOwnerAddress) {
+            await transferFactoryOwnership(formData.newOwnerAddress);
+            addToast("Ownership transferred successfully", "success");
+            form.reset({ newOwnerAddress: "" });
+          }
+          break;
+
+        case "liquidity":
+          if (formData.tokenSymbol && formData.tokenAddress) {
+            await addSupportedToken({
+              symbol: formData.tokenSymbol,
+              address: formData.tokenAddress,
+            });
+            addToast("Token added successfully", "success");
+            form.reset({ tokenSymbol: "", tokenAddress: "" });
+          } else if (formData.newClassHash) {
+            await upgradeLiquidityContract(formData.newClassHash);
+            addToast("Liquidity contract upgraded successfully", "success");
+            form.reset({ newClassHash: "" });
+          } else if (formData.oracleAddress) {
+            await updateOracleAddress(formData.oracleAddress);
+            addToast("Oracle address updated successfully", "success");
+            form.reset({ oracleAddress: "" });
+          }
+          break;
+      }
+    } catch (error: any) {
+      addToast(error.message || "Operation failed", "error");
     } finally {
       setProcessing(false);
     }
   };
 
-  const handleTransferFactoryOwnership = async () => {
-    if (!newOwnerAddress) {
-      addToast("Please enter a new owner address", "error");
-      return;
-    }
+  return (
+    <AdminProtectedRoute>
+      <AdminLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-white mb-4">Contract Management</h1>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setActiveTab("overview")}
+                className={`px-4 py-2 rounded-lg ${
+                  activeTab === "overview" ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300"
+                }`}
+              >
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab("factory")}
+                className={`px-4 py-2 rounded-lg ${
+                  activeTab === "factory" ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300"
+                }`}
+              >
+                Factory
+              </button>
+              <button
+                onClick={() => setActiveTab("liquidity")}
+                className={`px-4 py-2 rounded-lg ${
+                  activeTab === "liquidity" ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300"
+                }`}
+              >
+                Liquidity
+              </button>
+            </div>
+          </div>
 
-    try {
-      setProcessing(true);
-      await transferFactoryOwnership(newOwnerAddress);
-      addToast("Ownership transferred successfully", "success");
-      setNewOwnerAddress("");
-    } catch (error) {
-      addToast("Failed to transfer ownership", "error");
-    } finally {
-      setProcessing(false);
-    }
-  };
+          {activeTab === "factory" && (
+            <div className="space-y-6">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Upgrade Account Factory</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FormField
+                        control={form.control}
+                        name="newClassHash"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>New Class Hash</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter new class hash"
+                                {...field}
+                                disabled={processing}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        disabled={processing || !form.getValues("newClassHash")}
+                        className="mt-4"
+                      >
+                        {processing ? "Processing..." : "Upgrade Factory"}
+                      </Button>
+                    </CardContent>
+                  </Card>
 
-  const handleAddSupportedToken = async () => {
-    if (!tokenSymbol || !tokenAddress) {
-      addToast("Please enter both token symbol and address", "error");
-      return;
-    }
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Transfer Factory Ownership</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FormField
+                        control={form.control}
+                        name="newOwnerAddress"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>New Owner Address</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter new owner address"
+                                {...field}
+                                disabled={processing}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        disabled={processing || !form.getValues("newOwnerAddress")}
+                        className="mt-4"
+                      >
+                        {processing ? "Processing..." : "Transfer Ownership"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </form>
+              </Form>
+            </div>
+          )}
 
-    try {
-      setProcessing(true);
-      await addSupportedToken({ symbol: tokenSymbol, address: tokenAddress });
-      addToast("Token added successfully", "success");
-      setTokenSymbol("");
-      setTokenAddress("");
-    } catch (error) {
-      addToast("Failed to add supported token", "error");
-    } finally {
-      setProcessing(false);
-    }
-  };
+          {activeTab === "liquidity" && (
+            <div className="space-y-6">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Add Supported Token</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="tokenSymbol"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Token Symbol</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Enter token symbol"
+                                  {...field}
+                                  disabled={processing}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="tokenAddress"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Token Address</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Enter token address"
+                                  {...field}
+                                  disabled={processing}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <Button
+                        type="submit"
+                        disabled={
+                          processing ||
+                          !form.getValues("tokenSymbol") ||
+                          !form.getValues("tokenAddress")
+                        }
+                        className="mt-4"
+                      >
+                        {processing ? "Processing..." : "Add Token"}
+                      </Button>
+                    </CardContent>
+                  </Card>
 
-  const handleUpgradeLiquidityContract = async () => {
-    if (!newClassHash) {
-      addToast("Please enter a class hash", "error");
-      return;
-    }
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Upgrade Liquidity Contract</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FormField
+                        control={form.control}
+                        name="newClassHash"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>New Class Hash</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter new class hash"
+                                {...field}
+                                disabled={processing}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        disabled={processing || !form.getValues("newClassHash")}
+                        className="mt-4"
+                      >
+                        {processing ? "Processing..." : "Upgrade Contract"}
+                      </Button>
+                    </CardContent>
+                  </Card>
 
-    try {
-      setProcessing(true);
-      await upgradeLiquidityContract(newClassHash);
-      addToast("Liquidity contract upgraded successfully", "success");
-      setNewClassHash("");
-    } catch (error) {
-      addToast("Failed to upgrade liquidity contract", "error");
-    } finally {
-      setProcessing(false);
-    }
-  };
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Update Oracle Address</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FormField
+                        control={form.control}
+                        name="oracleAddress"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Oracle Address</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter oracle address"
+                                {...field}
+                                disabled={processing}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        disabled={processing || !form.getValues("oracleAddress")}
+                        className="mt-4"
+                      >
+                        {processing ? "Processing..." : "Update Oracle"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </form>
+              </Form>
+            </div>
+          )}
 
-  const handleTransferFactoryOwnership = async () => {
-    if (!newOwnerAddress) {
-      addToast("Please enter a new owner address", "error");
-      return;
-    }
-
-    try {
-      setProcessing(true);
-      await transferFactoryOwnership(newOwnerAddress);
-      addToast("Ownership transferred successfully", "success");
-      setNewOwnerAddress("");
-    } catch (error) {
-      addToast("Failed to transfer ownership", "error");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleAddSupportedToken = async () => {
-    if (!tokenSymbol || !tokenAddress) {
-      addToast("Please enter both token symbol and address", "error");
-      return;
-    }
-
-    try {
-      setProcessing(true);
-      await addSupportedToken({ symbol: tokenSymbol, address: tokenAddress });
-      addToast("Token added successfully", "success");
-      setTokenSymbol("");
+          {activeTab === "overview" && (
+            <div className="space-y-6">
+              {loading ? (
+                <div>Loading contract information...</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {contracts && Object.entries(contracts).map(([key, value]) => (
+                    <Card key={key}>
+                      <CardHeader>
+                        <CardTitle>{key}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <p>
+                            <span className="text-gray-400">Address:</span>{" "}
+                            <code className="text-sm bg-gray-800 px-2 py-1 rounded">
+                              {value.address}
+                            </code>
+                          </p>
+                          <p>
+                            <span className="text-gray-400">Class Hash:</span>{" "}
+                            <code className="text-sm bg-gray-800 px-2 py-1 rounded">
+                              {value.classHash}
+                            </code>
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </AdminLayout>
+    </AdminProtectedRoute>
+  );
       setTokenAddress("");
     } catch (error) {
       addToast("Failed to add supported token", "error");
@@ -193,18 +420,6 @@ export default function ContractsPage() {
       setOracleAddress("");
     } catch (error) {
       addToast("Failed to update oracle address", "error");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleUnsubscribeAll = async () => {
-    try {
-      setProcessing(true);
-      await unsubscribeAllEvents();
-      addToast("Unsubscribed from all events", "success");
-    } catch (error) {
-      addToast("Failed to unsubscribe", "error");
     } finally {
       setProcessing(false);
     }
@@ -271,23 +486,13 @@ export default function ContractsPage() {
             >
               Liquidity Pool
             </button>
-            <button
-              onClick={() => setActiveTab("events")}
-              className={`px-4 py-2 font-medium transition-colors ${
-                activeTab === "events"
-                  ? "text-purple-400 border-b-2 border-purple-400"
-                  : "text-gray-400 hover:text-gray-300"
-              }`}
-            >
-              Event Listener
-            </button>
           </div>
 
           {/* Overview Tab */}
           {activeTab === "overview" && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {contracts.map((contract, index) => (
+                {contracts?.map((contract, index) => (
                   <Card key={index} className="bg-gray-800 border-gray-700">
                     <CardHeader>
                       <CardTitle className="text-white flex items-center justify-between">
@@ -530,71 +735,6 @@ export default function ContractsPage() {
                       <>
                         <CogIcon className="h-5 w-5 mr-2" />
                         Update Oracle
-                      </>
-                    )}
-                  </button>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Event Listener Tab */}
-          {activeTab === "events" && (
-            <div className="space-y-6">
-              <Card className="bg-gray-800 border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center justify-between">
-                    <span className="flex items-center">
-                      <CogIcon className="h-5 w-5 mr-2 text-blue-400" />
-                      Event Listener Status
-                    </span>
-                    {eventListenerStatus?.isConnected ? (
-                      <CheckCircleIcon className="h-6 w-6 text-green-400" />
-                    ) : (
-                      <XCircleIcon className="h-6 w-6 text-red-400" />
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-gray-900 rounded-lg">
-                      <p className="text-sm text-gray-400">Connection Status</p>
-                      <p className="text-lg font-semibold text-white mt-1">
-                        {eventListenerStatus?.isConnected ? "Connected" : "Disconnected"}
-                      </p>
-                    </div>
-                    <div className="p-4 bg-gray-900 rounded-lg">
-                      <p className="text-sm text-gray-400">Active Subscriptions</p>
-                      <p className="text-lg font-semibold text-white mt-1">
-                        {eventListenerStatus?.activeSubscriptions || 0}
-                      </p>
-                    </div>
-                  </div>
-
-                  {eventListenerStatus?.subscriptionIds && eventListenerStatus.subscriptionIds.length > 0 && (
-                    <div>
-                      <p className="text-sm font-medium text-gray-300 mb-2">Subscription IDs</p>
-                      <div className="space-y-2">
-                        {eventListenerStatus.subscriptionIds.map((id, index) => (
-                          <div key={index} className="p-2 bg-gray-900 rounded text-sm text-white font-mono">
-                            {id}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <button
-                    onClick={handleUnsubscribeAll}
-                    disabled={processing || !eventListenerStatus?.activeSubscriptions}
-                    className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center"
-                  >
-                    {processing ? (
-                      <div className="loading-spinner h-5 w-5"></div>
-                    ) : (
-                      <>
-                        <XCircleIcon className="h-5 w-5 mr-2" />
-                        Unsubscribe All
                       </>
                     )}
                   </button>

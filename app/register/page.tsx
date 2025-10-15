@@ -1,190 +1,452 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { useToast } from "@/contexts/ToastContext"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline"
-import { createUser } from "@/api/routes/user"
+import type React from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useToast } from "@/contexts/ToastContext";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { createUser } from "@/api/routes/user";
+import {
+  userRegistrationSchema,
+  type UserRegistrationFormData,
+} from "@/lib/validations/validations";
 
 export default function RegisterPage() {
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [phoneNumber, setPhoneNumber] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [bvn, setBvn] = useState("")
-  const [nin, setNin] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const { addToast } = useToast()
-  const router = useRouter()
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { addToast } = useToast();
+  const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Basic client-side validation
-    if (!email || !password || !firstName || !lastName) {
-      addToast("Please fill in all required fields.", "error")
-      return
-    }
-    
-    if (password.length < 8) {
-      addToast("Password must be at least 8 characters long.", "error")
-      return
-    }
-    
-    setIsLoading(true)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid },
+    setError,
+  } = useForm<UserRegistrationFormData>({
+    resolver: zodResolver(userRegistrationSchema),
+    mode: "onChange",
+  });
+
+  const onSubmit = async (data: UserRegistrationFormData) => {
+    setIsLoading(true);
 
     try {
-      await createUser({ firstName, lastName, email, password, phoneNumber, bvn, nin });
-      addToast("Registration successful! Please login with your credentials.", "success")
-      router.push("/login")
+      await createUser(data);
+      addToast(
+        "Registration successful! Please login with your credentials.",
+        "success"
+      );
+      router.push("/login");
     } catch (error: any) {
-      // Extract error message from the error response if available
-      const errorMessage = error.response?.data?.message || error.message || 'Registration failed. Please try again.';
-      addToast(errorMessage, "error")
+      const responseData = error.response?.data;
+
+      if (responseData?.field && responseData?.error) {
+        setError(responseData.field as keyof UserRegistrationFormData, {
+          message: responseData.error,
+        });
+      } else if (Array.isArray(responseData?.message)) {
+        responseData.message.forEach((err: any) => {
+          if (err.property) {
+            setError(err.property as keyof UserRegistrationFormData, {
+              message: Object.values(err.constraints)[0] as string,
+            });
+          }
+        });
+      } else {
+        const errorMessage =
+          responseData?.message ||
+          error.message ||
+          "Registration failed. Please try again.";
+        addToast(errorMessage, "error");
+      }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-white">Create your account</h2>
+          <h2 className="mt-6 text-3xl font-extrabold text-white">
+            Create your account
+          </h2>
           <p className="mt-2 text-sm text-gray-400">Join our sync platform</p>
         </div>
 
         <div className="card">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div className="grid grid-cols-1 md:grid-cols-2 md:gap-4">
               <div className="form-group">
                 <label htmlFor="firstName" className="form-label">
-                  First Name
+                  First Name <span className="text-red-500">*</span>
                 </label>
-                <input
-                  id="firstName"
-                  name="firstName"
-                  type="text"
-                  required
-                  className="form-input h-12"
-                  placeholder="Enter your first name"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                />
+                <div className="relative">
+                  <input
+                    id="firstName"
+                    type="text"
+                    className={`form-input h-12 transition-colors duration-200 ${
+                      errors.firstName
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                        : "border-gray-600 focus:border-purple-500 focus:ring-purple-500/20"
+                    }`}
+                    placeholder="Enter your first name"
+                    {...register("firstName")}
+                  />
+                  {errors.firstName && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <svg
+                        className="h-5 w-5 text-red-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                {errors.firstName && (
+                  <p className="text-red-400 text-sm mt-2 flex items-center">
+                    <svg
+                      className="h-4 w-4 mr-1 flex-shrink-0"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {errors.firstName.message}
+                  </p>
+                )}
               </div>
               <div className="form-group">
                 <label htmlFor="lastName" className="form-label">
-                  Last Name
+                  Last Name <span className="text-red-500">*</span>
                 </label>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  required
-                  className="form-input h-12"
-                  placeholder="Enter your last name"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
+                <div className="relative">
+                  <input
+                    id="lastName"
+                    type="text"
+                    className={`form-input h-12 transition-colors duration-200 ${
+                      errors.lastName
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                        : "border-gray-600 focus:border-purple-500 focus:ring-purple-500/20"
+                    }`}
+                    placeholder="Enter your last name"
+                    {...register("lastName")}
+                  />
+                  {errors.lastName && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <svg
+                        className="h-5 w-5 text-red-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                {errors.lastName && (
+                  <p className="text-red-400 text-sm mt-2 flex items-center">
+                    <svg
+                      className="h-4 w-4 mr-1 flex-shrink-0"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {errors.lastName.message}
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="form-group">
               <label htmlFor="email" className="form-label">
-                Email address
+                Email address <span className="text-red-500">*</span>
               </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="form-input h-12"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  id="email"
+                  type="email"
+                  className={`form-input h-12 transition-colors duration-200 ${
+                    errors.email
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-600 focus:border-purple-500 focus:ring-purple-500/20"
+                  }`}
+                  placeholder="Enter your email"
+                  {...register("email")}
+                />
+                {errors.email && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg
+                      className="h-5 w-5 text-red-500"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              {errors.email && (
+                <p className="text-red-400 text-sm mt-2 flex items-center">
+                  <svg
+                    className="h-4 w-4 mr-1 flex-shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             <div className="form-group">
               <label htmlFor="phoneNumber" className="form-label">
                 Phone Number <span className="text-gray-400">(Optional)</span>
               </label>
-              <input
-                id="phoneNumber"
-                name="phoneNumber"
-                type="tel"
-                className="form-input h-12"
-                placeholder="Enter your phone number"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  id="phoneNumber"
+                  type="tel"
+                  className={`form-input h-12 transition-colors duration-200 ${
+                    errors.phoneNumber
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-600 focus:border-purple-500 focus:ring-purple-500/20"
+                  }`}
+                  placeholder="e.g., +2348012345678 or 08012345678"
+                  {...register("phoneNumber")}
+                />
+                {errors.phoneNumber && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg
+                      className="h-5 w-5 text-red-500"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              {errors.phoneNumber && (
+                <p className="text-red-400 text-sm mt-2 flex items-center">
+                  <svg
+                    className="h-4 w-4 mr-1 flex-shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {errors.phoneNumber.message}
+                </p>
+              )}
             </div>
 
             <div className="form-group">
               <label htmlFor="bvn" className="form-label">
-                BVN
+                BVN <span className="text-red-500">*</span>
               </label>
-              <input
-                id="bvn"
-                name="bvn"
-                type="text"
-                required
-                className="form-input h-12"
-                placeholder="Enter your BVN"
-                value={bvn}
-                onChange={(e) => setBvn(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  id="bvn"
+                  type="text"
+                  maxLength={11}
+                  className={`form-input h-12 transition-colors duration-200 ${
+                    errors.bvn
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-600 focus:border-purple-500 focus:ring-purple-500/20"
+                  }`}
+                  placeholder="Enter your 11-digit BVN"
+                  {...register("bvn")}
+                />
+                {errors.bvn && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg
+                      className="h-5 w-5 text-red-500"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              {errors.bvn && (
+                <p className="text-red-400 text-sm mt-2 flex items-center">
+                  <svg
+                    className="h-4 w-4 mr-1 flex-shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {errors.bvn.message}
+                </p>
+              )}
             </div>
 
             <div className="form-group">
               <label htmlFor="nin" className="form-label">
-                NIN
+                NIN <span className="text-red-500">*</span>
               </label>
-              <input
-                id="nin"
-                name="nin"
-                type="text"
-                required
-                className="form-input h-12"
-                placeholder="Enter your NIN"
-                value={nin}
-                onChange={(e) => setNin(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  id="nin"
+                  type="text"
+                  maxLength={11}
+                  className={`form-input h-12 transition-colors duration-200 ${
+                    errors.nin
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-600 focus:border-purple-500 focus:ring-purple-500/20"
+                  }`}
+                  placeholder="Enter your 11-digit NIN"
+                  {...register("nin")}
+                />
+                {errors.nin && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg
+                      className="h-5 w-5 text-red-500"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              {errors.nin && (
+                <p className="text-red-400 text-sm mt-2 flex items-center">
+                  <svg
+                    className="h-4 w-4 mr-1 flex-shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {errors.nin.message}
+                </p>
+              )}
             </div>
 
             <div className="form-group">
               <label htmlFor="password" className="form-label">
-                Password
+                Password <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
                   id="password"
-                  name="password"
                   type={showPassword ? "text" : "password"}
-                  required
-                  className="form-input h-12 pr-12"
+                  className={`form-input h-12 pr-12 transition-colors duration-200 ${
+                    errors.password
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-600 focus:border-purple-500 focus:ring-purple-500/20"
+                  }`}
                   placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  {...register("password")}
                 />
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-300 transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                  {showPassword ? (
+                    <EyeSlashIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
                 </button>
+                {errors.password && (
+                  <div className="absolute inset-y-0 right-0 pr-10 flex items-center pointer-events-none">
+                    <svg
+                      className="h-5 w-5 text-red-500"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                )}
               </div>
+              {errors.password && (
+                <p className="text-red-400 text-sm mt-2 flex items-center">
+                  <svg
+                    className="h-4 w-4 mr-1 flex-shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
             <div className="pt-2">
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !isValid}
                 className="w-full btn-primary h-12 text-base disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
@@ -210,5 +472,5 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

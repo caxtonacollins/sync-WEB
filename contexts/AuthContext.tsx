@@ -218,16 +218,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         console.log("[AuthContext] Refreshing access token...");
         const data = await refreshTokenApi(refreshTokenValue);
-        const { access_token: newToken, refresh_token: newRefreshToken, user: userData } = data;
+        const { accessToken: newToken, refreshToken: newRefreshToken } = data;
 
         // Update in-memory state only
         setToken(newToken);
         setRefreshTokenValue(newRefreshToken);
-
-        if (userData?.id) {
-          // Fetch complete user data with all relations
-          await fetchCompleteUserData(userData.id, newToken);
-        }
 
         console.log("[AuthContext] Token refresh successful");
         return true;

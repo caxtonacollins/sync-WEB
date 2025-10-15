@@ -6,22 +6,18 @@ export interface CreateTransferPayload {
   token: string;
 }
 
-export const transferToken = async (token: string, payload: CreateTransferPayload) => {
+export const transferToken = async (payload: CreateTransferPayload) => {
   try {
-    const response = await api.post("/transfer/token", payload, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await api.post("/transfer/token", payload);
     return response.data;
   } catch (error) {
     throw error;
   }
 };
 
-export const transferFiat = async (token: string, payload: CreateTransferPayload) => {
+export const transferFiat = async (payload: CreateTransferPayload) => {
   try {
-    const response = await api.post("/transfer/fiat", payload, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await api.post("/transfer/fiat", payload);
     return response.data;
   } catch (error) {
     throw error;

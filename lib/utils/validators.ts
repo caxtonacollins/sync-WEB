@@ -8,8 +8,16 @@ export const validateEmail = (email: string): boolean => {
 };
 
 export const validatePhoneNumber = (phone: string): boolean => {
-  const phoneRegex = /^(\+234|0)[789]\d{9}$/;
+  // Updated to match backend regex pattern: ^\+?[1-9]\d{1,14}$
+  // Supports international format with country codes
+  const phoneRegex = /^\+?[1-9]\d{1,14}$/;
   return phoneRegex.test(phone);
+};
+
+export const validateNigerianPhoneNumber = (phone: string): boolean => {
+  // Nigerian phone number validation for local formats
+  const nigerianPhoneRegex = /^(\+?234|0)[789]\d{9}$/;
+  return nigerianPhoneRegex.test(phone);
 };
 
 export const validateAmount = (amount: number, min: number = 0, max?: number): boolean => {
@@ -41,7 +49,7 @@ export const validatePassword = (password: string): {
   if (!/[0-9]/.test(password)) {
     errors.push("Password must contain at least one number");
   }
-  if (!/[!@#$%^&*]/.test(password)) {
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
     errors.push("Password must contain at least one special character");
   }
 
@@ -49,6 +57,24 @@ export const validatePassword = (password: string): {
     isValid: errors.length === 0,
     errors,
   };
+};
+
+export const validateBVN = (bvn: string): boolean => {
+  // BVN must be 11 digits and start with valid prefixes (22-39)
+  const bvnRegex = /^(22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39)\d{9}$/;
+  return bvnRegex.test(bvn);
+};
+
+export const validateNIN = (nin: string): boolean => {
+  // NIN must be 11 digits and start with 1-9
+  const ninRegex = /^[1-9]\d{10}$/;
+  return ninRegex.test(nin);
+};
+
+export const validateName = (name: string): boolean => {
+  // Names should be 2-50 characters, letters and spaces only
+  const nameRegex = /^[a-zA-Z\s]{2,50}$/;
+  return nameRegex.test(name);
 };
 
 export const sanitizeInput = (input: string): string => {
