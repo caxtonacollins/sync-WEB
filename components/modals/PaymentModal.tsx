@@ -60,6 +60,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
   const [step, setStep] = useState<
     "select" | "confirm" | "processing" | "success"
   >("select");
+  const [transactionHash, setTransactionHash] = useState<string>("");
 
   // Get wallet balances from TanStack Query
   const { data: walletData, isLoading: isLoadingWallets } = useWalletBalances();
@@ -146,21 +147,22 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
     }
 
     try {
+      let response;
       if (mode === "transfer") {
         const payload = {
           toAddress: recipientAddress,
           amount: parseFloat(amount),
           token:
-          transferType === "tokenToToken"
-          ? selectedToken.split("/")[0]
-          : selectedFiat,
+            transferType === "tokenToToken"
+              ? selectedToken.split("/")[0]
+              : selectedFiat,
         };
-        
+
         console.log("payload", payload);
         if (transferType === "tokenToToken") {
-          await transferToken(payload, token);
+          response = await transferToken(payload, token);
         } else {
-          await transferFiat(payload, token);
+          response = await transferFiat(payload, token);
         }
       } else if (mode === "swap") {
         if (!user) {
@@ -190,9 +192,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
               : SwapType.FIATTOTOKEN,
         };
 
-        await executeSwap(token, payload);
+        response = await executeSwap(token, payload);
       }
 
+      if (response?.transaction_hash) {
+        setTransactionHash(response.transaction_hash);
+      }
       setStep("success");
       addToast("Transaction successful!", "success");
     } catch (error) {
@@ -205,6 +210,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
     setStep("select");
     setAmount("");
     setMode("swap");
+    setTransactionHash("");
     onClose();
   };
 
@@ -630,6 +636,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
                 <div className="text-sm text-gray-400">
                   Successfully {mode === "swap" ? "Processed" : "Transferred"}
                 </div>
+                {transactionHash && (
+                  <div className="mt-4 pt-4 border-t border-gray-700">
+                    <div className="text-sm text-gray-400 mb-2">
+                      Transaction Hash
+                    </div>
+                    <a
+                      href={`https://sepolia.starkscan.co/tx/${transactionHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-purple-400 hover:text-purple-300 text-sm break-all"
+                    >
+                      {transactionHash}
+                    </a>
+                  </div>
+                )}
               </div>
               <Button
                 onClick={handleClose}
