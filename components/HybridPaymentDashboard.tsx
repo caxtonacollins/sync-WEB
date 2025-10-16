@@ -24,6 +24,7 @@ import ViewSettlementsModal from "@/components/modals/ViewSettlementsModal";
 import GenerateQRModal from "@/components/modals/GenerateQRModal";
 import ScanQRModal from "@/components/modals/ScanQRModal";
 import { useWalletSummary } from "@/hooks/useWalletData";
+import PaymentModal from "./modals/PaymentModal";
 
 interface PaymentSystemMetrics {
   fiatBalanceNGN: number;
@@ -317,7 +318,7 @@ export default function HybridPaymentDashboard() {
         isOpen={showTransferModal}
         onClose={() => setShowTransferModal(false)}
       />
-      <BridgeLiquidityModal
+      <PaymentModal
         isOpen={showBridgeModal}
         onClose={() => setShowBridgeModal(false)}
       />

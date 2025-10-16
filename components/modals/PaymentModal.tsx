@@ -5,6 +5,8 @@ import {
   XMarkIcon,
   ArrowPathIcon,
   CheckCircleIcon,
+  ClipboardIcon,
+  ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -197,6 +199,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
 
       if (response?.transaction_hash) {
         setTransactionHash(response.transaction_hash);
+      } else if (response?.transaction?.transactionHash) {
+        setTransactionHash(response.transaction.transactionHash);
+      } else if (response?.transactionHash) {
+        setTransactionHash(response.transactionHash);
       }
       setStep("success");
       addToast("Transaction successful!", "success");
@@ -641,13 +647,31 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
                     <div className="text-sm text-gray-400 mb-2">
                       Transaction Hash
                     </div>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <div className="flex-1 bg-gray-900 p-3 rounded-lg border border-gray-600">
+                        <div className="text-purple-400 text-sm font-mono break-all">
+                          {transactionHash}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(transactionHash);
+                          addToast("Transaction hash copied to clipboard", "success");
+                        }}
+                        className="p-2 text-gray-400 hover:text-white transition-colors"
+                        title="Copy transaction hash"
+                      >
+                        <ClipboardIcon className="h-5 w-5" />
+                      </button>
+                    </div>
                     <a
                       href={`https://sepolia.starkscan.co/tx/${transactionHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-purple-400 hover:text-purple-300 text-sm break-all"
+                      className="inline-flex items-center text-purple-400 hover:text-purple-300 text-sm transition-colors"
                     >
-                      {transactionHash}
+                      View on StarkScan
+                      <ArrowTopRightOnSquareIcon className="h-4 w-4 ml-1" />
                     </a>
                   </div>
                 )}
