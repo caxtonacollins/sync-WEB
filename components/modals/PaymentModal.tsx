@@ -158,9 +158,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
         
         console.log("payload", payload);
         if (transferType === "tokenToToken") {
-          await transferToken(payload);
+          await transferToken(payload, token);
         } else {
-          await transferFiat(payload);
+          await transferFiat(payload, token);
         }
       } else if (mode === "swap") {
         if (!user) {
