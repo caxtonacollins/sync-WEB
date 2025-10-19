@@ -14,10 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { paymentProcessor } from "@/lib/payment-processor";
-import { liquidityBridge } from "@/lib/liquidity-bridge";
 import TransferModal from "@/components/transfer/TransferModal";
-import BridgeLiquidityModal from "@/components/modals/BridgeLiquidityModal";
 import StakeSyncModal from "@/components/modals/StakeSyncModal";
 import ManageLiquidityModal from "@/components/modals/ManageLiquidityModal";
 import ViewSettlementsModal from "@/components/modals/ViewSettlementsModal";
