@@ -7,6 +7,7 @@ import {
   CheckCircleIcon,
   ClipboardIcon,
   ArrowTopRightOnSquareIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,20 +19,6 @@ import { executeSwap } from "@/api/routes/swaps";
 import { SwapType } from "@/enums";
 import { useWalletBalances } from "@/hooks/use-wallet-balances";
 import { useExchangeRates } from "@/hooks/use-exchange-rates";
-
-interface TokenItem {
-  id: string;
-  name: string;
-  balance: number;
-  isActive: boolean;
-}
-
-interface FiatItem {
-  id: string;
-  name: string;
-  balance: number;
-  isActive: boolean;
-}
 
 interface ExchangeRate {
   fiatSymbol: string;
@@ -63,11 +50,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
     "select" | "confirm" | "processing" | "success"
   >("select");
   const [transactionHash, setTransactionHash] = useState<string>("");
+  const [showTokenDropdown, setShowTokenDropdown] = useState(false);
+  const [showFiatDropdown, setShowFiatDropdown] = useState(false);
 
-  // Get wallet balances from TanStack Query
   const { data: walletData, isLoading: isLoadingWallets } = useWalletBalances();
 
-  // Convert wallet data to UI format
+  // Convert wallet data to UI format with ETH and USDC prioritized
   const availableToken = useMemo(
     () =>
       walletData?.cryptoBalances.map((balance) => ({
@@ -75,7 +63,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
         name: balance.currency,
         balance: balance.balance,
         isActive: true,
-      })) || [],
+      })).sort((a, b) => {
+        // Prioritize ETH and USDC
+        const priorityOrder = ['USDC', 'ETH'];
+        const aPriority = priorityOrder.indexOf(a.name);
+        const bPriority = priorityOrder.indexOf(b.name);
+        if (aPriority !== -1 && bPriority !== -1) {
+          return aPriority - bPriority;
+        }
+        if (aPriority !== -1) return -1;
+        if (bPriority !== -1) return 1;
+        return 0;
+      }) || [],
     [walletData]
   );
 
@@ -275,32 +274,72 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
                     <label className="text-sm font-medium text-gray-400 mb-2 block">
                       Select Token
                     </label>
-                    <div className="space-y-2">
-                      {availableToken.map((t) => (
-                        <div
-                          key={t.id}
-                          onClick={() => setSelectedToken(t.id)}
-                          className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                            selectedToken === t.id
-                              ? "border-purple-500 bg-purple-900/20"
-                              : "border-gray-700 bg-gray-800 hover:border-gray-600"
-                          }`}
-                        >
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="font-semibold text-white">
-                                {t.name}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                Balance: {t.balance}
-                              </p>
-                            </div>
-                            <Badge className="bg-purple-900 text-purple-400">
-                              Token
-                            </Badge>
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowTokenDropdown(!showTokenDropdown)}
+                        className="w-full flex items-center justify-between p-4 bg-gray-800 border-2 border-gray-700 rounded-lg hover:border-purple-500 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="text-left">
+                            <p className="font-semibold text-white">
+                              {availableToken.find((t) => t.id === selectedToken)?.name || "Select Token"}
+                              {availableToken.find((t) => t.id === selectedToken)?.name === 'ETH' && (
+                                <span className="ml-2 text-xs bg-blue-900 text-blue-400 px-2 py-1 rounded">
+                                  Popular
+                                </span>
+                              )}
+                              {availableToken.find((t) => t.id === selectedToken)?.name === 'USDC' && (
+                                <span className="ml-2 text-xs bg-green-900 text-green-400 px-2 py-1 rounded">
+                                  Stable
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              Balance: {availableToken.find((t) => t.id === selectedToken)?.balance || 0}
+                            </p>
                           </div>
                         </div>
-                      ))}
+                        <ChevronDownIcon className={`h-5 w-5 text-gray-400 transition-transform ${
+                          showTokenDropdown ? "rotate-180" : ""
+                        }`} />
+                      </button>
+
+                      {showTokenDropdown && (
+                        <div className="absolute z-10 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                          {availableToken.map((t) => (
+                            <button
+                              key={t.id}
+                              onClick={() => {
+                                setSelectedToken(t.id);
+                                setShowTokenDropdown(false);
+                              }}
+                              className="w-full flex items-center justify-between p-4 hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-0"
+                            >
+                              <div className="text-left">
+                                <p className="font-semibold text-white">
+                                  {t.name}
+                                  {t.name === 'ETH' && (
+                                    <span className="ml-2 text-xs bg-blue-900 text-blue-400 px-2 py-1 rounded">
+                                      Popular
+                                    </span>
+                                  )}
+                                  {t.name === 'USDC' && (
+                                    <span className="ml-2 text-xs bg-green-900 text-green-400 px-2 py-1 rounded">
+                                      Stable
+                                    </span>
+                                  )}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  Balance: {t.balance}
+                                </p>
+                              </div>
+                              <Badge className="bg-purple-900 text-purple-400">
+                                Token
+                              </Badge>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
@@ -332,25 +371,40 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
                     <label className="text-sm font-medium text-gray-400 mb-2 block">
                       Select Fiat
                     </label>
-                    <div className="space-y-2">
-                      {availableFiat.map((f) => (
-                        <div
-                          key={f.id}
-                          onClick={() => setSelectedFiat(f.id)}
-                          className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                            selectedFiat === f.id
-                              ? "border-purple-500 bg-purple-900/20"
-                              : "border-gray-700 bg-gray-800 hover:border-gray-600"
-                          }`}
-                        >
-                          <div className="flex justify-between items-center">
-                            <p className="font-semibold text-white">{f.name}</p>
-                            <Badge className="bg-blue-900 text-blue-400">
-                              Fiat
-                            </Badge>
-                          </div>
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowFiatDropdown(!showFiatDropdown)}
+                        className="w-full flex items-center justify-between p-4 bg-gray-800 border-2 border-gray-700 rounded-lg hover:border-purple-500 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <p className="font-semibold text-white">
+                            {availableFiat.find((f) => f.id === selectedFiat)?.name || "Select Fiat"}
+                          </p>
                         </div>
-                      ))}
+                        <ChevronDownIcon className={`h-5 w-5 text-gray-400 transition-transform ${
+                          showFiatDropdown ? "rotate-180" : ""
+                        }`} />
+                      </button>
+
+                      {showFiatDropdown && (
+                        <div className="absolute z-10 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                          {availableFiat.map((f) => (
+                            <button
+                              key={f.id}
+                              onClick={() => {
+                                setSelectedFiat(f.id);
+                                setShowFiatDropdown(false);
+                              }}
+                              className="w-full flex items-center justify-between p-3 hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-0"
+                            >
+                              <p className="font-semibold text-white">{f.name}</p>
+                              <Badge className="bg-blue-900 text-blue-400">
+                                Fiat
+                              </Badge>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </>
@@ -403,32 +457,72 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
                       <label className="text-sm font-medium text-gray-400 mb-2 block">
                         Select Token
                       </label>
-                      <div className="space-y-2">
-                        {availableToken.map((t) => (
-                          <div
-                            key={t.id}
-                            onClick={() => setSelectedToken(t.id)}
-                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                              selectedToken === t.id
-                                ? "border-purple-500 bg-purple-900/20"
-                                : "border-gray-700 bg-gray-800 hover:border-gray-600"
-                            }`}
-                          >
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <p className="font-semibold text-white">
-                                  {t.name}
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                  Balance: {t.balance}
-                                </p>
-                              </div>
-                              <Badge className="bg-purple-900 text-purple-400">
-                                Token
-                              </Badge>
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowTokenDropdown(!showTokenDropdown)}
+                          className="w-full flex items-center justify-between p-4 bg-gray-800 border-2 border-gray-700 rounded-lg hover:border-purple-500 transition-all"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="text-left">
+                              <p className="font-semibold text-white">
+                                {availableToken.find((t) => t.id === selectedToken)?.name || "Select Token"}
+                                {availableToken.find((t) => t.id === selectedToken)?.name === 'ETH' && (
+                                  <span className="ml-2 text-xs bg-blue-900 text-blue-400 px-2 py-1 rounded">
+                                    Popular
+                                  </span>
+                                )}
+                                {availableToken.find((t) => t.id === selectedToken)?.name === 'USDC' && (
+                                  <span className="ml-2 text-xs bg-green-900 text-green-400 px-2 py-1 rounded">
+                                    Stable
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Balance: {availableToken.find((t) => t.id === selectedToken)?.balance || 0}
+                              </p>
                             </div>
                           </div>
-                        ))}
+                          <ChevronDownIcon className={`h-5 w-5 text-gray-400 transition-transform ${
+                            showTokenDropdown ? "rotate-180" : ""
+                          }`} />
+                        </button>
+
+                        {showTokenDropdown && (
+                          <div className="absolute z-10 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                            {availableToken.map((t) => (
+                              <button
+                                key={t.id}
+                                onClick={() => {
+                                  setSelectedToken(t.id);
+                                  setShowTokenDropdown(false);
+                                }}
+                                className="w-full flex items-center justify-between p-4 hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-0"
+                              >
+                                <div className="text-left">
+                                  <p className="font-semibold text-white">
+                                    {t.name}
+                                    {t.name === 'ETH' && (
+                                      <span className="ml-2 text-xs bg-blue-900 text-blue-400 px-2 py-1 rounded">
+                                        Popular
+                                      </span>
+                                    )}
+                                    {t.name === 'USDC' && (
+                                      <span className="ml-2 text-xs bg-green-900 text-green-400 px-2 py-1 rounded">
+                                        Stable
+                                      </span>
+                                    )}
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                    Balance: {t.balance}
+                                  </p>
+                                </div>
+                                <Badge className="bg-purple-900 text-purple-400">
+                                  Token
+                                </Badge>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -437,27 +531,40 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
                       <label className="text-sm font-medium text-gray-400 mb-2 block">
                         Select Fiat Currency
                       </label>
-                      <div className="space-y-2">
-                        {availableFiat.map((f) => (
-                          <div
-                            key={f.id}
-                            onClick={() => setSelectedFiat(f.id)}
-                            className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                              selectedFiat === f.id
-                                ? "border-purple-500 bg-purple-900/20"
-                                : "border-gray-700 bg-gray-800 hover:border-gray-600"
-                            }`}
-                          >
-                            <div className="flex justify-between items-center">
-                              <p className="font-semibold text-white">
-                                {f.name}
-                              </p>
-                              <Badge className="bg-blue-900 text-blue-400">
-                                Fiat
-                              </Badge>
-                            </div>
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowFiatDropdown(!showFiatDropdown)}
+                          className="w-full flex items-center justify-between p-4 bg-gray-800 border-2 border-gray-700 rounded-lg hover:border-purple-500 transition-all"
+                        >
+                          <div className="flex items-center gap-3">
+                            <p className="font-semibold text-white">
+                              {availableFiat.find((f) => f.id === selectedFiat)?.name || "Select Fiat"}
+                            </p>
                           </div>
-                        ))}
+                          <ChevronDownIcon className={`h-5 w-5 text-gray-400 transition-transform ${
+                            showFiatDropdown ? "rotate-180" : ""
+                          }`} />
+                        </button>
+
+                        {showFiatDropdown && (
+                          <div className="absolute z-10 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                            {availableFiat.map((f) => (
+                              <button
+                                key={f.id}
+                                onClick={() => {
+                                  setSelectedFiat(f.id);
+                                  setShowFiatDropdown(false);
+                                }}
+                                className="w-full flex items-center justify-between p-3 hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-0"
+                              >
+                                <p className="font-semibold text-white">{f.name}</p>
+                                <Badge className="bg-blue-900 text-blue-400">
+                                  Fiat
+                                </Badge>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

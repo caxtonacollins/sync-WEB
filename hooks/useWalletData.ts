@@ -9,6 +9,8 @@ interface WalletBalance {
   currency: string;
   balance: number;
   accountId?: string;
+  accountNumber?: string;
+  bankName?: string;
   walletId?: string;
   provider?: string;
   network?: string;

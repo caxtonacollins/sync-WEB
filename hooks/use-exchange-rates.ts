@@ -20,7 +20,7 @@ export function useExchangeRates() {
       });
       return response.data as ExchangeRate[];
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
     enabled: !!token,
   });
 }
