@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { formatNumber } from "@/lib/utils/formatters";
 import { useSession } from "next-auth/react";
 import { getUserSwapOrders, SwapOrderListResponse } from "@/api/routes/swaps";
 
@@ -119,13 +120,13 @@ export default function SwapOrdersTable({ userId }: SwapOrdersTableProps) {
                 {order.fromAmount.toLocaleString()} {order.fromCurrency}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                {order.toAmount.toLocaleString()} {order.toCurrency}
+                {formatNumber(order.toAmount, 2)} {order.toCurrency}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                {order.rate.toFixed(2)}
+                {formatNumber(order.rate, 2)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                {order.fee.toLocaleString()} {order.fromCurrency}
+                {formatNumber(order.fee)} {order.fromCurrency}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
                 <span

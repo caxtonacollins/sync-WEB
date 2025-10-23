@@ -54,7 +54,6 @@ export default function RootLayout({
               </TransferProvider>
             </ToastProvider>
           </AuthProvider>
-          ```
         </ReactQueryProvider>
       </body>
     </html>

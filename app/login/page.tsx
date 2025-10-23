@@ -81,6 +81,16 @@ export default function LoginPage() {
 
         <div className="mt-8">
           <form className="space-y-6" onSubmit={handleSubmit}>
+            {isReturningUser && (
+              <input
+                type="email"
+                name="email"
+                autoComplete="email"
+                value={email}
+                readOnly
+                className="hidden"
+              />
+            )}
             {!isReturningUser && (
               <div>
                 <input

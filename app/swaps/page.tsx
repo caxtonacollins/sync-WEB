@@ -30,6 +30,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { SwapTableSkeleton } from "@/components/skeletons/SwapTableSkeleton";
 import PaymentModal from "@/components/modals/PaymentModal";
+import { formatNumber } from "@/lib/utils/formatters";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
@@ -286,13 +287,13 @@ export default function SwapsPage() {
                         className="hover:bg-gray-800 transition-colors"
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-400">
-                          {order.fromAmount} {order.fromCurrency}
+                          {formatNumber(order.fromAmount)} {order.fromCurrency}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-400">
-                          {order.toAmount} {order.toCurrency}
+                          {formatNumber(order.toAmount)} {order.toCurrency}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          1 {order.fromCurrency} = {order.rate}{" "}
+                          1 {order.fromCurrency} = {formatNumber(order.rate, 2)}{" "}
                           {order.toCurrency}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

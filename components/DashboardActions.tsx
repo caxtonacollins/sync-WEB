@@ -1,5 +1,6 @@
 "use client";
 
+import { useWalletSummary } from '@/hooks/useWalletData';
 import { Phone, Wifi, Zap, Repeat, Send, MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
 
@@ -13,6 +14,25 @@ const actions = [
 ];
 
 export default function DashboardActions() {
+  const {
+    isLoading,
+  } = useWalletSummary()
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-gray-800 p-6 rounded-xl animate-pulse">
+              <div className="h-4 bg-gray-700 rounded w-1/3 mb-4"></div>
+              <div className="h-8 bg-gray-700 rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-[#1a1f2b] p-4 rounded-2xl mt-6">
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-4 text-center">

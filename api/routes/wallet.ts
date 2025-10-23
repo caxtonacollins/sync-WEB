@@ -1,11 +1,10 @@
 import api from "..";
 
 export interface WalletSummaryResponse {
-  fiatBalanceNGN: number;
-  cryptoValueUSD: number;
+  totalBalanceNGN: number;
+  totalBalanceUSD: number;
   syncTokenBalance: number;
   stakedSyncTokens: number;
-  totalPortfolioValueNGN: number;
   transactionFeeDiscount: number;
   activeLiquidityPools: number;
   dailySettlementCount: number;

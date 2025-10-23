@@ -1,18 +1,19 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState } from "react"
+import { createContext, useContext, useState, useCallback, useEffect } from "react"
 import { CheckCircleIcon, XCircleIcon, InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline"
 
 interface Toast {
   id: string
   message: string
   type: "success" | "error" | "info"
+  timeoutId?: NodeJS.Timeout
 }
 
 interface ToastContextType {
   toasts: Toast[]
-  addToast: (message: string, type: "success" | "error" | "info") => void
+  addToast: (message: string, type: "success" | "error" | "info", options?: { timeout?: number }) => void
   removeToast: (id: string) => void
 }
 
@@ -21,20 +22,43 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined)
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
 
-  const addToast = (message: string, type: "success" | "error" | "info") => {
-    const id = Math.random().toString(36).substr(2, 9)
-    const toast = { id, message, type }
+  useEffect(() => {
+    return () => {
+      toasts.forEach(toast => {
+        if (toast.timeoutId) {
+          clearTimeout(toast.timeoutId)
+        }
+      })
+    }
+  }, [toasts])
 
-    setToasts((prev) => [...prev, toast])
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => {
+      const toastToRemove = prev.find(toast => toast.id === id)
+      if (toastToRemove?.timeoutId) {
+        clearTimeout(toastToRemove.timeoutId)
+      }
+      return prev.filter(toast => toast.id !== id)
+    })
+  }, [])
 
-    setTimeout(() => {
-      removeToast(id)
-    }, 5000)
-  }
+  const addToast = useCallback((
+    message: string, 
+    type: "success" | "error" | "info",
+    options: { timeout?: number } = {}
+  ) => {
+    const { timeout = 5000 } = options
+    
+    setToasts(prev => {
+      const existingToast = prev.find(t => t.message === message)
+      if (existingToast) return prev
 
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id))
-  }
+      const id = Math.random().toString(36).substr(2, 9)
+      const timeoutId = setTimeout(() => removeToast(id), timeout)
+      
+      return [...prev, { id, message, type, timeoutId }]
+    })
+  }, [removeToast])
 
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>

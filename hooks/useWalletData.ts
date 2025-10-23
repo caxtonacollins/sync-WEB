@@ -9,6 +9,8 @@ interface WalletBalance {
   currency: string;
   balance: number;
   accountId?: string;
+  accountNumber?: string;
+  bankName?: string;
   walletId?: string;
   provider?: string;
   network?: string;
@@ -51,8 +53,8 @@ export const useWalletSummary = () => {
       if (!token) throw new Error('No authentication token found');
       return await getWalletSummary(token);
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: 30 * 1000, // Refetch every 30 seconds
+    staleTime: 5 * 60000,
+    refetchInterval: 30 * 1000,
   });
 };
 
@@ -71,8 +73,8 @@ export const useWalletData = () => {
       
       return data as UnifiedWalletData;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: 15 * 1000, // Refetch every 15 seconds
+    staleTime: 5 * 60000,
+    refetchInterval: 15 * 1000,
   });
 };
 
@@ -88,13 +90,11 @@ export const useWalletTransactions = (userId?: string) => {
           throw new Error('No authentication token found');
         }
         
-        // Use the actual API call to fetch transactions
         const response = await getAllUserTransactions(token, {
           userId: userId || user?.id || '',
-          limit: 50, // Adjust based on your needs
+          limit: 50,
         });
         
-        // Transform the API response to match our WalletTransaction interface
         return response.data.map(tx => ({
           id: tx.id,
           type: tx.type as 'fiat' | 'crypto',
@@ -108,11 +108,11 @@ export const useWalletTransactions = (userId?: string) => {
       } catch (error) {
         console.error('Failed to fetch transactions:', error);
         addToast('Failed to load transactions', 'error');
-        throw error; // Let React Query handle the error
+        throw error;
       }
     },
-    enabled: !!user?.id, // Only run the query if we have a user ID
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: !!user?.id,
+    staleTime: 2 * 60000,
     refetchOnWindowFocus: false,
   });
 };

@@ -221,7 +221,7 @@ export function TransactionTable({
                     className="hover:bg-gray-800 transition-colors"
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-300">
-                      {transaction.id}
+                      {transaction.id.slice(0, 13) + "..."}
                     </td>
                     <td
                       className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${
@@ -230,34 +230,10 @@ export function TransactionTable({
                           : "text-red-400"
                       }`}
                     >
-                      {(() => {
-                        const amount = Math.abs(transaction.amount);
-                        if (transaction.currency === "USDC") {
-                          return `USDC ${amount.toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}`;
-                        } else if (transaction.currency.includes("/")) {
-                          // Handle pairs like STRK/USD
-                          return `${amount.toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })} ${transaction.currency}`;
-                        } else {
-                          try {
-                            return new Intl.NumberFormat("en-US", {
-                              style: "currency",
-                              currency: transaction.currency,
-                            }).format(amount);
-                          } catch (error) {
-                            // Fallback for invalid currency codes
-                            return `${amount.toLocaleString("en-US", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })} ${transaction.currency}`;
-                          }
-                        }
-                      })()}
+                      {Math.abs(transaction.amount).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300 capitalize">
                       {transaction.type}

@@ -1,5 +1,6 @@
 import React from "react";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import { formatNumber } from "@/lib/utils/formatters";
 
 interface WalletCardProps {
   currency: string;
@@ -29,7 +30,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
         </button>
       </div>
       <div className="text-4xl font-bold text-gray-900">
-        {showBalance ? `$${balance.toFixed(2)}` : "••••••"}
+        {showBalance ? formatNumber(balance, 2) : "••••••"}
       </div>
       <div className="flex gap-4 mt-2">
         <button className="flex-1 bg-blue-600 text-white rounded-lg py-2 font-semibold hover:bg-blue-700 transition">

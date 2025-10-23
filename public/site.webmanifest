@@ -1,7 +1,7 @@
 {
   "name": "Sync - Modern Payment Platform",
   "short_name": "Sync",
-  "description": "Seamlessly manage your fiat and crypto assets with Sync's unified payment platform",
+  "description": "Seamlessly manage your fiat and token assets with Sync's unified payment platform",
   "theme_color": "#000000",
   "background_color": "#000000",
   "display": "standalone",
