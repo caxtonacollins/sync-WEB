@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWalletData, useWalletTransactions, WalletTransaction } from "@/hooks/useWalletData";
+import { formatNumber } from "@/lib/utils/formatters";
 
 // Re-exporting types from the hooks file
 
@@ -59,7 +60,6 @@ const UnifiedWallet = () => {
 
   // Slice transactions for display (first 2 for overview, all for transactions tab)
   const recentTransactions = useMemo(() => transactions.slice(0, 2), [transactions]);
-  const allTransactionsList = useMemo(() => transactions, [transactions]);
 
   const loading = isLoadingWallet || isLoadingTransactions || !walletData;
 
@@ -81,9 +81,9 @@ const UnifiedWallet = () => {
     if (currency === "NGN") {
       return `₦${amount.toLocaleString()}`;
     } else if (currency === "USD") {
-      return `$${amount.toLocaleString()}`;
+      return `$${formatNumber(amount)}`;
     } else {
-      return `${amount.toLocaleString()} ${currency}`;
+      return `${formatNumber(amount)} ${currency}`;
     }
   };
 

@@ -60,7 +60,10 @@ export const formatPercentage = (value: number, decimals: number = 1): string =>
   return `${value.toFixed(decimals)}%`;
 };
 
-export const formatNumber = (value: number, decimals: number = 2): string => {
+export const formatNumber = (value: number | null | undefined, decimals: number = 2, fallback: string = '0.00'): string => {
+  if (value === null || value === undefined || isNaN(value)) {
+    return fallback;
+  }
   return value.toLocaleString(undefined, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,

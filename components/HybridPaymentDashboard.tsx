@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { formatNumber } from '@/lib/utils/formatters';
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import {
@@ -11,7 +12,6 @@ import {
   ShieldCheckIcon,
   BoltIcon,
   ChevronDownIcon,
-  CheckIcon,
   ClipboardDocumentIcon,
   ClipboardDocumentCheckIcon,
 } from "@heroicons/react/24/outline";
@@ -68,7 +68,6 @@ export default function HybridPaymentDashboard() {
   const [selectedCrypto, setSelectedCrypto] = useState<any>(null);
   const { data: exchangeRates } = useExchangeRates()
   const ngnToUsdRate = exchangeRates?.find((rate) => rate.fiatSymbol === "NGN" && rate.tokenSymbol === "USD")?.rate
-  console.log("ngnToUsdRate", ngnToUsdRate);
 
   // Currency toggle state (NGN or USD)
   const [displayCurrency, setDisplayCurrency] = useState<'NGN' | 'USD'>('NGN');
@@ -132,9 +131,9 @@ export default function HybridPaymentDashboard() {
   const getPortfolioValue = () => {
     if (!metrics) return 0;
     if (displayCurrency === 'NGN') {
-      return metrics.totalPortfolioValueNGN;
+      return metrics.totalBalanceNGN;
     } else {
-      return metrics.totalPortfolioValueNGN / ngnToUsdRate!;
+      return metrics.totalBalanceUSD;
     }
   };
 
@@ -206,7 +205,7 @@ export default function HybridPaymentDashboard() {
             </div>
             <div className="text-6xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-6 animate-fade-in">
               {displayCurrency === 'NGN' ? '₦' : '$'}
-              {getPortfolioValue().toLocaleString(undefined, {
+              {(displayCurrency === 'USD' && !ngnToUsdRate) ? '...' : getPortfolioValue().toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
@@ -217,11 +216,18 @@ export default function HybridPaymentDashboard() {
             <div className="mt-6 flex justify-center gap-6 text-xs flex-wrap">
               <div className="flex items-center gap-2 bg-gray-800/50 px-4 py-2 rounded-lg border border-gray-700">
                 <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
-                <span className="text-gray-300 font-medium">Fiat: {displayCurrency === 'NGN' ? '₦' : '$'}{displayCurrency === 'NGN' ? metrics.fiatBalanceNGN.toLocaleString() : (metrics.fiatBalanceNGN / 1600).toFixed(2)}</span>
+                <span className="text-gray-300 font-medium">
+                  Fiat: {displayCurrency === 'NGN' ? '₦' : '$'}
+                  {displayCurrency === 'NGN' 
+                    ? formatNumber(metrics.totalBalanceNGN, 2)
+                    : ngnToUsdRate 
+                      ? formatNumber(metrics.totalBalanceNGN / ngnToUsdRate, 2)
+                      : '...'}
+                </span>
               </div>
               <div className="flex items-center gap-2 bg-gray-800/50 px-4 py-2 rounded-lg border border-gray-700">
                 <div className="w-3 h-3 rounded-full bg-purple-500 animate-pulse"></div>
-                <span className="text-gray-300 font-medium">Crypto: ${metrics.cryptoValueUSD.toLocaleString()}</span>
+                <span className="text-gray-300 font-medium">Crypto: ${metrics.totalBalanceUSD.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-2 bg-gray-800/50 px-4 py-2 rounded-lg border border-gray-700">
                 <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
@@ -233,7 +239,7 @@ export default function HybridPaymentDashboard() {
       </Card>
 
       {/* Main Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 relative z-20">
         {/* Fiat Wallet with Dropdown */}
         <Card className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border-blue-700/50 backdrop-blur-sm hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 transform">
           <CardHeader className="pb-3">
@@ -270,7 +276,7 @@ export default function HybridPaymentDashboard() {
 
               {/* Fiat Dropdown */}
               {showFiatDropdown && walletData?.fiatBalances && (
-                <div className="absolute z-10 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute z-[100] w-full bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {walletData.fiatBalances.map((fiat, idx) => (
                     <button
                       key={idx}
@@ -363,7 +369,7 @@ export default function HybridPaymentDashboard() {
 
               {/* Crypto Dropdown */}
               {showCryptoDropdown && walletData?.cryptoBalances && (
-                <div className="absolute z-10 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute z-[100] w-full bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {walletData.cryptoBalances.map((crypto, idx) => (
                     <button
                       key={idx}

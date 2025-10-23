@@ -172,7 +172,7 @@ const AppLayout = ({ children }: UserLayoutProps) => {
                 alt="Sync Logo"
                 width={180}
                 height={60}
-                className="w-auto h-auto max-w-full"
+                className="max-w-full h-auto"
                 priority
               />
             </div>
