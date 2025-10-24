@@ -6,7 +6,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useRouter } from "next/navigation";
 import { LoginResponse } from "@/api/server-calls";
 import { loginApi, refreshTokenApi } from "@/api/routes/auth";
-import { getDashboardData, getUserById } from "@/api/routes/user";
+import { getDashboardData, getUserById, provisionAccounts as provisionAccountsApi } from "@/api/routes/user";
 
 export interface FiatAccount {
   id: string;
@@ -118,6 +118,9 @@ interface AuthContextType {
   getCryptoWallets: () => CryptoWallet[];
   getTransactions: () => Transaction[];
   getSwapOrders: () => SwapOrder[];
+  isProvisioning: boolean;
+  loadingStatus: string;
+  setLoadingStatus: (status: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -128,6 +131,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [refreshTokenValue, setRefreshTokenValue] = useState<string | null>(null);
   const [lastEmail, setLastEmail] = useLocalStorage<string | null>("lastEmail", null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProvisioning, setIsProvisioning] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState("");
   const router = useRouter();
 
   // Prevent multiple simultaneous refresh attempts
@@ -149,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [setLastEmail]);
 
   // Fetch complete user data with all relations (fiatAccounts, cryptoWallets, transactions, etc.)
-  const fetchCompleteUserData = useCallback(async (userId: string, currentToken?: string) => {
+  const fetchCompleteUserData = useCallback(async (userId: string, currentToken?: string): Promise<User> => {
     const tokenToUse = currentToken || token;
     if (!tokenToUse) {
       throw new Error("No token available");
@@ -169,6 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Set complete user data (includes fiatAccounts, cryptoWallets, transactions, etc.)
       setUser(data.user);
+      return data.user;
 
     } catch (error) {
       console.error("[AuthContext] Failed to fetch user data:", error);
@@ -275,6 +281,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user?.id, clearAuthData, router]);
 
   const login = useCallback(async (email: string, password: string): Promise<LoginResult> => {
+    setLoadingStatus("Authenticating...");
     try {
       const data = await loginApi(email, password);
 
@@ -306,7 +313,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Fetch complete user data with all relations (fiatAccounts, cryptoWallets, etc.)
       if (newUser.id) {
-        await fetchCompleteUserData(newUser.id, newToken);
+        setLoadingStatus("Fetching user data...");
+        const fullUser = await fetchCompleteUserData(newUser.id, newToken);
+
+        if (fullUser && (fullUser.fiatAccounts.length === 0 || fullUser.cryptoWallets.length === 0)) {
+          try {
+            setIsProvisioning(true);
+            setLoadingStatus("Provisioning accounts...");
+            await provisionAccountsApi(newToken);
+            await fetchCompleteUserData(newUser.id, newToken);
+          } catch (error) {
+            console.error("[AuthContext] Failed to provision accounts:", error);
+          } finally {
+            setIsProvisioning(false);
+          }
+        }
       }
 
       // Redirect based on user role
@@ -406,6 +427,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         getCryptoWallets,
         getTransactions,
         getSwapOrders,
+        isProvisioning,
+        loadingStatus,
+        setLoadingStatus
       }}
     >
       {children}

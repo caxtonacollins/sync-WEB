@@ -25,7 +25,7 @@ import { formatNumber } from "@/lib/utils/formatters";
 // Re-exporting types from the hooks file
 
 const UnifiedWallet = () => {
-  const { user } = useAuth();
+  const { isProvisioning } = useAuth();
   const { addToast } = useToast();
   const [showBalances, setShowBalances] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
@@ -61,7 +61,7 @@ const UnifiedWallet = () => {
   // Slice transactions for display (first 2 for overview, all for transactions tab)
   const recentTransactions = useMemo(() => transactions.slice(0, 2), [transactions]);
 
-  const loading = isLoadingWallet || isLoadingTransactions || !walletData;
+  const loading = isLoadingWallet || isLoadingTransactions || !walletData || isProvisioning;
 
   // Refetch function that can be called manually
   const handleRefresh = async () => {

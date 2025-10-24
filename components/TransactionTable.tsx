@@ -19,6 +19,8 @@ import {
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { Transaction } from "@/types/types";
+import { TransactionTableRowSkeleton } from "./skeletons/TransactionTableRowSkeleton";
+import Link from "next/link";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 const TRANSACTION_TYPES = ["all", "deposit", "withdrawal", "swap", "transfer"];
@@ -214,14 +216,30 @@ export function TransactionTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {transactions && transactions.length > 0 ? (
+              {loading ? (
+                Array.from({ length: filters.limit }).map((_, i) => (
+                  <TransactionTableRowSkeleton key={i} />
+                ))
+              ) : transactions && transactions.length > 0 ? (
                 transactions.map((transaction) => (
                   <tr
                     key={transaction.id}
                     className="hover:bg-gray-800 transition-colors"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-300">
-                      {transaction.id.slice(0, 13) + "..."}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-300">
+                      {transaction.metadata?.txHash ? (
+                        <Link
+                          href={`https://voyager.online/tx/${transaction.metadata.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:underline"
+                        >
+                          {transaction.metadata.txHash.slice(0, 8)}...
+                          {transaction.metadata.txHash.slice(-6)}
+                        </Link>
+                      ) : (
+                        <span>{transaction.id.slice(0, 13)}...</span>
+                      )}
                     </td>
                     <td
                       className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${
@@ -230,7 +248,7 @@ export function TransactionTable({
                           : "text-red-400"
                       }`}
                     >
-                      {Math.abs(transaction.amount).toLocaleString("en-US", {
+                      {Math.abs(transaction.amount / Math.pow(10, 18)).toLocaleString("en-US", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}

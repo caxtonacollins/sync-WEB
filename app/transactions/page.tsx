@@ -8,7 +8,6 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { TrendingUpIcon } from "lucide-react";
 import { getAllUserTransactions, TransactionListResponse } from "@/api/routes/transaction";
 import { TransactionTable } from "@/components/TransactionTable";
-import { TransactionTableSkeleton } from "@/components/skeletons/TransactionTableSkeleton";
 import { Transaction } from "@/types/types";
 
 export default function TransactionsPage() {
@@ -77,17 +76,13 @@ export default function TransactionsPage() {
             </h1>
           </div>
 
-          {loading ? (
-            <TransactionTableSkeleton />
-          ) : (
-            <TransactionTable
-              transactions={transactions}
-              loading={loading}
-              filters={filters}
-              totalTransactions={totalTransactions}
-              onFilterChange={setFilters}
-            />
-          )}
+          <TransactionTable
+            transactions={transactions}
+            loading={loading}
+            filters={filters}
+            totalTransactions={totalTransactions}
+            onFilterChange={setFilters}
+          />
         </div>
       </Layout>
     </ProtectedRoute>
