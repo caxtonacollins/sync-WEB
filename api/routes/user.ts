@@ -8,7 +8,7 @@ export const createUser = async (userData: UserRegistrationFormData) => {
     const response = await api.post(
       "/user",
       userData,
-      { validateStatus: (status) => status < 500 } // Don't throw for 4xx errors
+      { validateStatus: (status) => status < 500 }
     );
 
     if (response.status >= 400) {
@@ -42,7 +42,6 @@ export const getUserById = async (userId: string, token: string) => {
   const response = await api.get(`/user/${userId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  // Backend returns { user: {...} }, extract the user object
   return response.data.user || response.data;
 };
 
@@ -124,6 +123,24 @@ export const resolveAccountNumber = async (
     return data;
   } catch (error) {
     console.error("Error resolving account number:", error);
+    throw error;
+  }
+};
+
+export const provisionAccounts = async (token: string) => {
+  try {
+    const response = await api.post(
+      '/user/provision-accounts',
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error provisioning accounts:', error);
     throw error;
   }
 };

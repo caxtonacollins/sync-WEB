@@ -28,7 +28,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-import { SwapTableSkeleton } from "@/components/skeletons/SwapTableSkeleton";
+import { SwapTableRowSkeleton } from "@/components/skeletons/SwapTableRowSkeleton";
 import PaymentModal from "@/components/modals/PaymentModal";
 import { formatNumber } from "@/lib/utils/formatters";
 
@@ -121,14 +121,14 @@ export default function SwapsPage() {
                 <ArrowPathIcon className="h-8 w-8 mr-3 text-cyan-400" />
                 Swap History
               </h1>
-                <Button
-                  size="sm"
-                  className="bg-purple-800 hover:bg-purple-700"
-                  onClick={togglePaymentModal}
-                >
-                  <PlusIcon className="h-5 w-5 mr-2" />
-                  New Swap
-                </Button>
+              <Button
+                size="sm"
+                className="bg-purple-800 hover:bg-purple-700"
+                onClick={togglePaymentModal}
+              >
+                <PlusIcon className="h-5 w-5 mr-2" />
+                New Swap
+              </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -255,132 +255,154 @@ export default function SwapsPage() {
             </div>
           </div>
 
-          {loading ? (
-            <SwapTableSkeleton />
-          ) : (
-            <div className="card">
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead>
-                    <tr className="border-b border-gray-800">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        From
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        To
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Rate
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Date
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-800">
-                    {swapOrders.data.map((order) => (
-                      <tr
-                        key={order.id}
-                        className="hover:bg-gray-800 transition-colors"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-400">
-                          {formatNumber(order.fromAmount)} {order.fromCurrency}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-400">
-                          {formatNumber(order.toAmount)} {order.toCurrency}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          1 {order.fromCurrency} = {formatNumber(order.rate, 2)}{" "}
-                          {order.toCurrency}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={getStatusBadge(order.status)}>
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </td>
-                      </tr>
+          <div className="card">
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-gray-800">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      From
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      To
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Rate
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Transaction Hash
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {loading
+                    ? Array.from({ length: filters.limit }).map((_, i) => (
+                        <SwapTableRowSkeleton key={i} />
+                      ))
+                    : swapOrders.data.map((order) => (
+                        <tr
+                          key={order.id}
+                          className="hover:bg-gray-800 transition-colors"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-400">
+                            {formatNumber(order.fromAmount)} {order.fromCurrency}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-400">
+                            {formatNumber(order.toAmount)} {order.toCurrency}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                            1 {order.fromCurrency} = {formatNumber(order.rate, 2)}{" "}
+                            {order.toCurrency}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={getStatusBadge(order.status)}>
+                              {order.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-300">
+                            {order.transaction?.transactionHash ? (
+                              <Link
+                                href={`https://voyager.online/tx/${order.transaction.transactionHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:underline"
+                              >
+                                {order.transaction.transactionHash.slice(0, 8)}...
+                                {order.transaction.transactionHash.slice(-6)}
+                              </Link>
+                            ) : (
+                              <span>N/A</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="mt-4 flex items-center justify-between px-4 py-3 sm:px-6">
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-400">Items per page</span>
+                <Select
+                  value={filters.limit.toString()}
+                  onValueChange={(value) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      limit: parseInt(value),
+                      page: 1, // Reset to first page when changing limit
+                    }))
+                  }
+                >
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <SelectItem key={size} value={size.toString()}>
+                        {size}
+                      </SelectItem>
                     ))}
-                  </tbody>
-                </table>
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Pagination Controls */}
-              <div className="mt-4 flex items-center justify-between px-4 py-3 sm:px-6">
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm text-gray-400">Items per page</span>
-                  <Select
-                    value={filters.limit.toString()}
-                    onValueChange={(value) =>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-400">
+                  Page {filters.page} of{" "}
+                  {Math.ceil(swapOrders.total / filters.limit)}
+                </span>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
                       setFilters((prev) => ({
                         ...prev,
-                        limit: parseInt(value),
-                        page: 1, // Reset to first page when changing limit
+                        page: Math.max(1, prev.page - 1),
                       }))
                     }
+                    disabled={filters.page <= 1}
                   >
-                    <SelectTrigger className="w-20">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PAGE_SIZE_OPTIONS.map((size) => (
-                        <SelectItem key={size} value={size.toString()}>
-                          {size}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm text-gray-400">
-                    Page {filters.page} of{" "}
-                    {Math.ceil(swapOrders.total / filters.limit)}
-                  </span>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          page: Math.max(1, prev.page - 1),
-                        }))
-                      }
-                      disabled={filters.page <= 1}
-                    >
-                      <ChevronLeftIcon className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          page: prev.page + 1,
-                        }))
-                      }
-                      disabled={
-                        filters.page >=
-                        Math.ceil(swapOrders.total / filters.limit)
-                      }
-                    >
-                      <ChevronRightIcon className="h-4 w-4" />
-                    </Button>
-                  </div>
+                    <ChevronLeftIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        page: prev.page + 1,
+                      }))
+                    }
+                    disabled={
+                      filters.page >=
+                      Math.ceil(swapOrders.total / filters.limit)
+                    }
+                  >
+                    <ChevronRightIcon className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </div>
-          )}
-             <PaymentModal 
-        isOpen={showPaymentModal} 
-        onClose={() => setShowPaymentModal(false)} 
-      />
+          </div>
+          <PaymentModal
+            isOpen={showPaymentModal}
+            onClose={() => setShowPaymentModal(false)}
+            onTransactionComplete={(txHash) => {
+              addToast(`Transaction sent: ${txHash.slice(0, 10)}...`, "info");
+              fetchSwapOrders();
+            }}
+          />
         </div>
       </Layout>
     </ProtectedRoute>

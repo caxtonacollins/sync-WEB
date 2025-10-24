@@ -30,9 +30,14 @@ interface ExchangeRate {
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onTransactionComplete: (txHash: string) => void;
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
+const PaymentModal: React.FC<PaymentModalProps> = ({
+  isOpen,
+  onClose,
+  onTransactionComplete,
+}) => {
   const { addToast } = useToast();
   const { token, user } = useAuth();
   const [mode, setMode] = useState<"swap" | "transfer">("swap");
@@ -204,10 +209,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
         setTransactionHash(response.transactionHash);
       }
       setStep("success");
-      addToast("Transaction successful!", "success");
+      const txHash = response?.transaction_hash || response?.transaction?.transactionHash || response?.transactionHash;
+      if (txHash) {
+        onTransactionComplete(txHash);
+        addToast("Transaction submitted!", "success");
+      } else {
+        addToast("Transaction successful!", "success");
+      }
+      handleClose();
     } catch (error) {
       addToast("Transaction failed", "error");
       setStep("select");
+      handleClose();
     }
   };
 

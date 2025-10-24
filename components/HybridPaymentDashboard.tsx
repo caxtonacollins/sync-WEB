@@ -39,7 +39,7 @@ interface PaymentSystemMetrics {
 }
 
 export default function HybridPaymentDashboard() {
-  const { user } = useAuth();
+  const { isProvisioning } = useAuth();
   const { addToast } = useToast();
   
   // Use the wallet summary hook
@@ -137,7 +137,7 @@ export default function HybridPaymentDashboard() {
     }
   };
 
-  if (isLoading && !metrics) {
+  if ((isLoading && !metrics) || isProvisioning) {
     return (
       <div className="space-y-8 animate-fade-in">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -578,6 +578,9 @@ export default function HybridPaymentDashboard() {
       <PaymentModal
         isOpen={showBridgeModal}
         onClose={() => setShowBridgeModal(false)}
+        onTransactionComplete={(txHash) => {
+          addToast(`Transaction sent: ${txHash.slice(0, 10)}...`, "info");
+        }}
       />
       <StakeSyncModal
         isOpen={showStakeModal}

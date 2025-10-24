@@ -15,6 +15,9 @@ export interface SwapOrderResponse {
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;
+  transaction?: {
+    transactionHash: string;
+  } | null;
 }
 
 export interface SwapOrderListResponse {
