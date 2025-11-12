@@ -4,7 +4,7 @@ export interface FiatAccount {
   id: string;
   name: string;
   accountNumber: string;
-  balance: number;
+  balance: string;
   currency: string;
   initials: string;
   isDefault: boolean;
@@ -14,21 +14,21 @@ interface UnifiedWalletBalance {
   userId: string;
   fiatBalances: {
     currency: string;
-    balance: number;
+    balance: string;
     accountId: string;
     provider: string;
     isDefault: boolean;
   }[];
   cryptoBalances: {
     currency: string;
-    balance: number;
+    balance: string;
     walletId: string;
     network: string;
     address: string;
     isDefault: boolean;
   }[];
-  totalValueUSD: number;
-  totalValueNGN: number;
+  totalValueUSD: string;
+  totalValueNGN: string;
 }
 
 class WalletAPI {
