@@ -2,6 +2,15 @@
  * Shared utility functions for formatting data across admin and user interfaces
  */
 
+export const formatTokenAmount = (amount: number | string, decimals: number = 2): string => {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return num.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+    useGrouping: true
+  });
+};
+
 export const formatCurrency = (
   amount: number,
   currency: string = "NGN"
@@ -14,7 +23,10 @@ export const formatCurrency = (
   };
 
   const symbol = symbols[currency] || currency;
-  return `${symbol}${amount.toLocaleString()}`;
+  return `${symbol}${amount.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
 };
 
 export const formatDate = (date: string | Date): string => {
@@ -61,12 +73,11 @@ export const formatPercentage = (value: number, decimals: number = 1): string =>
 };
 
 export const formatNumber = (value: number | null | undefined, decimals: number = 2, fallback: string = '0.00'): string => {
-  if (value === null || value === undefined || isNaN(value)) {
-    return fallback;
-  }
+  if (value === null || value === undefined) return fallback;
   return value.toLocaleString(undefined, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
+    useGrouping: true
   });
 };
 

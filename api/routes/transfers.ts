@@ -1,4 +1,4 @@
-import api from "../index";
+import { api } from "@/lib/api-client";
 
 export interface CreateTransferPayload {
   toAddress: string;
@@ -6,7 +6,10 @@ export interface CreateTransferPayload {
   token: string;
 }
 
-export const transferToken = async (payload: CreateTransferPayload, token: string) => {
+export const transferToken = async (
+  payload: CreateTransferPayload,
+  token: string
+) => {
   try {
     const response = await api.post("/transfer/token", payload, {
       headers: { Authorization: `Bearer ${token}` },
@@ -17,7 +20,10 @@ export const transferToken = async (payload: CreateTransferPayload, token: strin
   }
 };
 
-export const transferFiat = async (payload: CreateTransferPayload, token: string) => {
+export const transferFiat = async (
+  payload: CreateTransferPayload,
+  token: string
+) => {
   try {
     const response = await api.post("/transfer/fiat", payload, {
       headers: { Authorization: `Bearer ${token}` },

@@ -1,4 +1,4 @@
-import api from "../index";
+import { api } from "@/lib/api-client";
 
 export const createSession = async (sessionData: any, token: string) => {
   const response = await api.post(`/session`, sessionData, {
@@ -21,7 +21,11 @@ export const getSessionById = async (sessionId: string, token: string) => {
   return response.data;
 };
 
-export const updateSession = async (sessionId: string, sessionData: any, token: string) => {
+export const updateSession = async (
+  sessionId: string,
+  sessionData: any,
+  token: string
+) => {
   const response = await api.patch(`/session/${sessionId}`, sessionData, {
     headers: { Authorization: `Bearer ${token}` },
   });

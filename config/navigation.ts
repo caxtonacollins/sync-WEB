@@ -54,13 +54,6 @@ export const navigationConfig: NavigationItem[] = [
     description: "Swap between currencies",
   },
   {
-    name: "SYNC Token",
-    href: "/syncpay",
-    icon: CurrencyDollarIcon,
-    roles: ["USER", "ADMIN"],
-    description: "Stake and earn rewards",
-  },
-  {
     name: "Profile",
     href: "/profile",
     icon: UserIcon,

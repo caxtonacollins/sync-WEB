@@ -1,5 +1,5 @@
 import { SwapType } from "@/enums";
-import api from "../index";
+import { api } from "@/lib/api-client";
 
 export interface SwapOrderResponse {
   id: string;
@@ -40,7 +40,10 @@ export interface CreateSwapOrderPayload {
   swapType: SwapType;
 }
 
-export const executeSwap = async (token: string, payload: CreateSwapOrderPayload) => {
+export const executeSwap = async (
+  token: string,
+  payload: CreateSwapOrderPayload
+) => {
   try {
     const response = await api.post("/swap-order/execute", payload, {
       headers: { Authorization: `Bearer ${token}` },
@@ -68,14 +71,11 @@ export const getUserSwapOrders = async (
     throw new Error("userId is required");
   }
 
-  const response = await api.get<SwapOrderListResponse>(
-    `/swap-order`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      // Include userId so backend filters by current user
-      params,
-    }
-  );
+  const response = await api.get<SwapOrderListResponse>(`/swap-order`, {
+    headers: { Authorization: `Bearer ${token}` },
+    // Include userId so backend filters by current user
+    params,
+  });
   return response.data;
 };
 

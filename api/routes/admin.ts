@@ -1,4 +1,4 @@
-import api from "../index";
+import { api } from "@/lib/api-client";
 
 // Dashboard & Analytics
 export const getAdminDashboardStats = async (token: string) => {
@@ -25,7 +25,11 @@ export const getAllUsers = async (token: string, params?: any) => {
   return response.data;
 };
 
-export const updateUserStatus = async (userId: string, status: string, token: string) => {
+export const updateUserStatus = async (
+  userId: string,
+  status: string,
+  token: string
+) => {
   const response = await api.patch(
     `/user/${userId}`,
     { status },
@@ -34,7 +38,11 @@ export const updateUserStatus = async (userId: string, status: string, token: st
   return response.data;
 };
 
-export const updateUserRole = async (userId: string, role: string, token: string) => {
+export const updateUserRole = async (
+  userId: string,
+  role: string,
+  token: string
+) => {
   const response = await api.patch(
     `/user/${userId}`,
     { role },
@@ -43,7 +51,12 @@ export const updateUserRole = async (userId: string, role: string, token: string
   return response.data;
 };
 
-export const verifyUserKYC = async (userId: string, status: string, notes: string, token: string) => {
+export const verifyUserKYC = async (
+  userId: string,
+  status: string,
+  notes: string,
+  token: string
+) => {
   const response = await api.patch(
     `/user/${userId}/verify-kyc`,
     { status, notes },
@@ -61,7 +74,11 @@ export const getAllTransactions = async (token: string, params?: any) => {
   return response.data;
 };
 
-export const updateTransactionStatus = async (txId: string, status: string, token: string) => {
+export const updateTransactionStatus = async (
+  txId: string,
+  status: string,
+  token: string
+) => {
   const response = await api.patch(
     `/tx/${txId}`,
     { status },
@@ -72,9 +89,13 @@ export const updateTransactionStatus = async (txId: string, status: string, toke
 
 // Contract Management
 export const setLiquidityContractAddress = async (data: any, token: string) => {
-  const response = await api.post(`/contract/set-liquidity-contract-address`, data, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await api.post(
+    `/contract/set-liquidity-contract-address`,
+    data,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
   return response.data;
 };
 
@@ -107,16 +128,24 @@ export const transferOwnership = async (data: any, token: string) => {
 };
 
 export const setAccountClasshash = async (data: any, token: string) => {
-  const response = await api.post(`/contract/liquidity/set-account-classhash`, data, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await api.post(
+    `/contract/liquidity/set-account-classhash`,
+    data,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
   return response.data;
 };
 
 export const registerUserToLiquidity = async (data: any, token: string) => {
-  const response = await api.post(`/contract/register-user-to-liquidity`, data, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await api.post(
+    `/contract/register-user-to-liquidity`,
+    data,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
   return response.data;
 };
 
@@ -135,23 +164,35 @@ export const addSupportedToken = async (data: any, token: string) => {
 };
 
 export const transferLiquidityOwnership = async (data: any, token: string) => {
-  const response = await api.post(`/contract/transfer-liquidity-ownership`, data, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await api.post(
+    `/contract/transfer-liquidity-ownership`,
+    data,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
   return response.data;
 };
 
 export const upgradeLiquidityContract = async (data: any, token: string) => {
-  const response = await api.post(`/contract/upgrade-liquidity-contract`, data, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await api.post(
+    `/contract/upgrade-liquidity-contract`,
+    data,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
   return response.data;
 };
 
 export const upgradePragmaOracleAddress = async (data: any, token: string) => {
-  const response = await api.post(`/contract/upgrade-pragma-oracle-address`, data, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await api.post(
+    `/contract/upgrade-pragma-oracle-address`,
+    data,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
   return response.data;
 };
 
@@ -163,7 +204,11 @@ export const getSystemSettings = async (token: string) => {
   return response.data;
 };
 
-export const updateSystemSetting = async (key: string, value: any, token: string) => {
+export const updateSystemSetting = async (
+  key: string,
+  value: any,
+  token: string
+) => {
   const response = await api.patch(
     `/system-setting/${key}`,
     { value },

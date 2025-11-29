@@ -4,9 +4,8 @@ import type React from "react";
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useRouter } from "next/navigation";
-import { LoginResponse } from "@/api/server-calls";
 import { loginApi, refreshTokenApi } from "@/api/routes/auth";
-import { getDashboardData, getUserById, provisionAccounts as provisionAccountsApi } from "@/api/routes/user";
+import { createCryptoAccountsApi, getDashboardData, getUserById } from "@/api/routes/user";
 
 export interface FiatAccount {
   id: string;
@@ -14,9 +13,9 @@ export interface FiatAccount {
   provider: string;
   accountNumber: string;
   accountName: string;
-  name: string; // For UI display
-  initials: string; // Computed from accountName
-  balance: number; // Current balance
+  name: string;
+  initials: string;
+  balance: number;
   bankName: string;
   bankCode: string;
   currency: string;
@@ -79,6 +78,7 @@ interface User {
   country: string | null;
   postalCode: string | null;
   idType: string | null;
+  starknetAccountAddress: string | null;
   idNumber: string | null;
   idFrontImage: string | null;
   idBackImage: string | null;
@@ -316,11 +316,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoadingStatus("Fetching user data...");
         const fullUser = await fetchCompleteUserData(newUser.id, newToken);
 
-        if (fullUser && (fullUser.fiatAccounts.length === 0 || fullUser.cryptoWallets.length === 0)) {
+        console.log("Full user data:", fullUser);
+
+        if (fullUser && (fullUser.cryptoWallets.length === 0)) {
           try {
             setIsProvisioning(true);
             setLoadingStatus("Provisioning accounts...");
-            await provisionAccountsApi(newToken);
+            await createCryptoAccountsApi(newToken);
+            // await initializeCryptoBalance(newUser.id, newToken);
             await fetchCompleteUserData(newUser.id, newToken);
           } catch (error) {
             console.error("[AuthContext] Failed to provision accounts:", error);

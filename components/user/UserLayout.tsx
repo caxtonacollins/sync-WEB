@@ -59,12 +59,6 @@ const userNavigation: NavigationItem[] = [
     description: "Swap between currencies",
   },
   {
-    name: "SYNC Token",
-    href: "/syncpay",
-    icon: CurrencyDollarIcon,
-    description: "Stake and earn rewards",
-  },
-  {
     name: "Profile",
     href: "/profile",
     icon: UserIcon,

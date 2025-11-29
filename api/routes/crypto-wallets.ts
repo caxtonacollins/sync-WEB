@@ -1,6 +1,9 @@
-import api from "../index";
+import { api } from "@/lib/api-client";
 
-export const getCryptoWalletsByUserId = async (userId: string, token: string) => {
+export const getCryptoWalletsByUserId = async (
+  userId: string,
+  token: string
+) => {
   try {
     const response = await api.get(`/user/${userId}/crypto-wallets`, {
       headers: { Authorization: `Bearer ${token}` },

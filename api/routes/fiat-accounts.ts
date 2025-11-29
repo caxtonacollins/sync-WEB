@@ -1,4 +1,4 @@
-import api from "../index";
+import { api } from "@/lib/api-client";
 
 export interface FiatAccount {
   id: string;
@@ -48,7 +48,6 @@ class WalletAPI {
     });
     return response.data;
   }
-  
 }
 
 export default WalletAPI;

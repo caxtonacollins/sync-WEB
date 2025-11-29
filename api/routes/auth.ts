@@ -1,8 +1,11 @@
 import { AxiosError } from "axios";
-import api from "../index";
+import { api } from "@/lib/api-client";
 import type { LoginResponse } from "../server-calls";
 
-export const loginApi = async (email: string, password: string): Promise<LoginResponse | { error: string }> => {
+export const loginApi = async (
+  email: string,
+  password: string
+): Promise<LoginResponse | { error: string }> => {
   try {
     const response = await api.post<LoginResponse>(
       "/auth/login",
@@ -12,7 +15,9 @@ export const loginApi = async (email: string, password: string): Promise<LoginRe
     return response.data;
   } catch (err) {
     const error = err as AxiosError<{ message?: string }>;
-    return { error: error.response?.data?.message || error.message || "Login failed" };
+    return {
+      error: error.response?.data?.message || error.message || "Login failed",
+    };
   }
 };
 

@@ -1,4 +1,4 @@
-import api from "../index";
+import { api } from "@/lib/api-client";
 
 export const setPin = async (userId: string, pin: string, token: string) => {
   const { data } = await api.patch(
@@ -31,5 +31,3 @@ export const changePin = async (
   );
   return data?.success === true;
 };
-
-

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import api from "@/api/index";
+import { api } from "@/lib/api-client";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ExchangeRate {

@@ -71,7 +71,26 @@ export const useWalletData = () => {
         throw new Error("Invalid wallet data received");
       }
       
-      return data as UnifiedWalletData;
+      // Transform the data to match UnifiedWalletData
+      const transformedData: UnifiedWalletData = {
+        ...data,
+        fiatBalances: data.fiatBalances.map(balance => ({
+          ...balance,
+          balance: parseFloat(balance.balance) || 0,
+          accountNumber: balance.accountId, // Map accountId to accountNumber if needed
+          walletId: balance.accountId // Map accountId to walletId if needed
+        })),
+        cryptoBalances: data.cryptoBalances?.map(balance => ({
+          ...balance,
+          balance: parseFloat(balance.balance) || 0,
+          accountId: balance.walletId, // Map walletId to accountId if needed
+          accountNumber: balance.address // Map address to accountNumber if needed
+        })) || [],
+        totalValueUSD: parseFloat(data.totalValueUSD as any) || 0,
+        totalValueNGN: parseFloat((data as any).totalValueNGN || '0') || 0
+      };
+      
+      return transformedData;
     },
     staleTime: 5 * 60000,
     refetchInterval: 15 * 1000,

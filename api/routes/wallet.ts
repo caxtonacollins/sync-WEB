@@ -1,4 +1,4 @@
-import api from "..";
+import { api } from "@/lib/api-client";
 
 export interface WalletSummaryResponse {
   totalBalanceNGN: number;
@@ -10,13 +10,15 @@ export interface WalletSummaryResponse {
   dailySettlementCount: number;
 }
 
-export const getWalletSummary = async (token: string): Promise<WalletSummaryResponse> => {
+export const getWalletSummary = async (
+  token: string
+): Promise<WalletSummaryResponse> => {
   try {
-    const response = await api.get('/wallet/summary', {
-      headers: { 
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      }
+    const response = await api.get("/wallet/summary", {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
     });
     return response.data;
   } catch (error) {

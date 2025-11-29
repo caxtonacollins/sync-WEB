@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import {
@@ -19,16 +19,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useWalletData, useWalletTransactions, WalletTransaction } from "@/hooks/useWalletData";
-import { formatNumber } from "@/lib/utils/formatters";
+import { useWalletData, useWalletSummary, useWalletTransactions, WalletTransaction } from "@/hooks/useWalletData";
+import { formatNumber, formatTokenAmount } from "@/lib/utils/formatters";
+import { useExchangeRates } from "@/hooks/use-exchange-rates";
 
-// Re-exporting types from the hooks file
 
 const UnifiedWallet = () => {
-  const { isProvisioning } = useAuth();
+  const { isProvisioning, user } = useAuth();
   const { addToast } = useToast();
   const [showBalances, setShowBalances] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+
+  const {
+    data: metrics,
+    isLoading,
+    error,
+    refetch: refetchWalletSummary
+  } = useWalletSummary();
+  const { data: exchangeRates } = useExchangeRates()
+  const ngnToUsdRate = exchangeRates?.find((rate: any) => rate.fiatSymbol === "NGN" && rate.tokenSymbol === "USD")?.rate
+  // Currency toggle state (NGN or USD)
+  const [displayCurrency, setDisplayCurrency] = useState<'NGN' | 'USD'>('NGN');
+  const getPortfolioValue = () => {
+    if (!metrics) return 0;
+    if (displayCurrency === 'NGN') {
+      return metrics.totalBalanceNGN;
+    } else {
+      return metrics.totalBalanceUSD;
+    }
+  };
 
   // Use the wallet data and transactions hooks
   const {
@@ -46,17 +65,21 @@ const UnifiedWallet = () => {
   } = useWalletTransactions();
 
   // Handle errors
-  React.useEffect(() => {
+  useEffect(() => {
     if (walletError) {
       console.error("Failed to load wallet data:", walletError);
       addToast("Failed to load wallet data", "error");
+    }
+
+    if (error) {
+      addToast("Unable to load payment system data", "error");
     }
 
     if (transactionsError) {
       console.error("Failed to load transactions:", transactionsError);
       addToast("Failed to load transactions", "error");
     }
-  }, [walletError, transactionsError, addToast]);
+  }, [walletError, transactionsError, addToast, error]);
 
   // Slice transactions for display (first 2 for overview, all for transactions tab)
   const recentTransactions = useMemo(() => transactions.slice(0, 2), [transactions]);
@@ -78,13 +101,13 @@ const UnifiedWallet = () => {
   };
 
   const formatCurrency = (amount: number, currency: string) => {
+    const formattedAmount = formatTokenAmount(amount, 2);
     if (currency === "NGN") {
-      return `₦${amount.toLocaleString()}`;
+      return `₦${formattedAmount}`;
     } else if (currency === "USD") {
-      return `$${formatNumber(amount)}`;
-    } else {
-      return `${formatNumber(amount)} ${currency}`;
+      return `$${formattedAmount}`;
     }
+    return `${formattedAmount} ${currency}`;
   };
 
   const getStatusColor = (status: string) => {
@@ -119,6 +142,24 @@ const UnifiedWallet = () => {
     );
   }
 
+  if ((isLoading && !metrics) || isProvisioning) {
+    return (
+      <div className="space-y-8 animate-fade-in">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-gray-800/50 p-6 rounded-xl animate-pulse backdrop-blur-sm">
+              <div className="h-4 bg-gray-700 rounded w-1/3 mb-4"></div>
+              <div className="h-8 bg-gray-700 rounded w-1/2 mb-2"></div>
+              <div className="h-3 bg-gray-700 rounded w-2/3"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!metrics) return null;
+
   if (walletError || transactionsError) {
     return (
       <div className="text-center p-6 bg-red-900/20 border border-red-700 rounded-lg">
@@ -145,40 +186,89 @@ const UnifiedWallet = () => {
 
   return (
     <div className="space-y-6">
-      {/* Total Portfolio Value */}
-      <Card className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 border-purple-700">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <Wallet className="h-6 w-6 text-purple-400 mr-2" />
-              <h2 className="text-xl font-semibold text-white">
-                Total Portfolio
-              </h2>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowBalances(!showBalances)}
-              className="text-gray-400 hover:text-white"
-            >
-              {showBalances ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-
+      {/* Total Portfolio Value with Currency Toggle */}
+      <Card className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-700/50 backdrop-blur-sm hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 transform hover:scale-[1.02]">
+        <CardContent className="pt-8 pb-8">
           <div className="text-center">
-            <div className="text-3xl font-bold text-white mb-2">
-              {showBalances
-                ? formatCurrency(walletData.totalValueNGN, "NGN")
-                : "••••••"}
+            <div className="flex items-center justify-center gap-3 mb-4 relative">
+              <h3 className="text-2xl font-bold text-white">
+                Total Portfolio Value
+              </h3>
+              <button
+                onClick={() => setShowBalances(!showBalances)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-gray-700/50 transition-colors"
+                aria-label={showBalances ? 'Hide balances' : 'Show balances'}
+              >
+                {showBalances ? (
+                  <EyeOff className="h-5 w-5 text-gray-300" />
+                ) : (
+                  <Eye className="h-5 w-5 text-gray-400" />
+                )}
+              </button>
+              {/* Currency Toggle */}
+              <div className="flex bg-gray-800/50 rounded-lg p-1 border border-gray-700">
+                <button
+                  onClick={() => setDisplayCurrency('NGN')}
+                  className={`px-4 py-1.5 rounded text-sm font-medium transition-all duration-200 ${displayCurrency === 'NGN'
+                      ? 'bg-purple-600 text-white shadow-lg'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                    }`}
+                >
+                  NGN
+                </button>
+                <button
+                  onClick={() => setDisplayCurrency('USD')}
+                  className={`px-4 py-1.5 rounded text-sm font-medium transition-all duration-200 ${displayCurrency === 'USD'
+                      ? 'bg-purple-600 text-white shadow-lg'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                    }`}
+                >
+                  USD
+                </button>
+              </div>
             </div>
-            <div className="text-lg text-purple-400">
-              {showBalances
-                ? formatCurrency(walletData.totalValueUSD, "USD")
-                : "••••••"}
+            <div className="text-6xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-6 animate-fade-in">
+              {!showBalances ? '••••••' : (
+                <>
+                  {displayCurrency === 'NGN' ? '₦' : '$'}
+                  {(displayCurrency === 'USD' && !ngnToUsdRate) ? '...' : formatNumber(
+                    displayCurrency === 'NGN' ? metrics?.totalBalanceNGN || 0 : metrics?.totalBalanceUSD || 0,
+                    2
+                  )}
+                </>
+              )}
+            </div>
+            <div className="text-sm text-gray-400 mb-6">
+              Fiat + Crypto + SYNC Staking
+            </div>
+            <div className="mt-6 flex justify-center gap-6 text-xs flex-wrap">
+              <div className="flex items-center gap-2 bg-gray-800/50 px-4 py-2 rounded-lg border border-gray-700">
+                <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
+                <span className="text-gray-300 font-medium">
+                  Fiat: {!showBalances ? '••••' : (
+                    <>
+                      {displayCurrency === 'NGN' ? '₦' : '$'}
+                      {displayCurrency === 'NGN'
+                        ? formatNumber(metrics?.totalBalanceNGN || 0, 2)
+                        : ngnToUsdRate
+                          ? formatNumber((metrics?.totalBalanceNGN || 0) / ngnToUsdRate, 2)
+                          : '...'}
+                    </>
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-800/50 px-4 py-2 rounded-lg border border-gray-700">
+                <div className="w-3 h-3 rounded-full bg-purple-500 animate-pulse"></div>
+                <span className="text-gray-300 font-medium">
+                  Crypto: {!showBalances ? '••••' : `$${formatNumber(metrics?.totalBalanceUSD || 0, 2)}`}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-800/50 px-4 py-2 rounded-lg border border-gray-700">
+                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="text-gray-300 font-medium">
+                  SYNC: {!showBalances ? '••••' : formatNumber(metrics?.syncTokenBalance || 0, 2)}
+                </span>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -203,6 +293,30 @@ const UnifiedWallet = () => {
             Crypto
           </TabsTrigger>
         </TabsList>
+
+        {/* Wallet Address with Copy Button - Only shown in Crypto tab */}
+        {activeTab === 'crypto' && user?.starknetAccountAddress && (
+          <div className="flex items-center justify-center mt-2 text-sm">
+            <div className="flex items-center bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-700">
+              <span className="text-gray-300 font-mono text-xs">
+                {user.starknetAccountAddress}
+              </span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(user.starknetAccountAddress!);
+                  addToast('Wallet address copied!', 'success');
+                }}
+                className="ml-2 text-gray-400 hover:text-white transition-colors"
+                aria-label="Copy wallet address"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -349,9 +463,6 @@ const UnifiedWallet = () => {
                         {balance.currency}
                       </p>
                       <p className="text-sm text-gray-400">{balance.network}</p>
-                      <p className="text-xs text-gray-500 font-mono">
-                        {balance.address}
-                      </p>
                       {balance.isDefault && (
                         <Badge className="mt-1 bg-green-900 text-green-400">
                           Default

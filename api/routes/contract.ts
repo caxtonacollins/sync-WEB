@@ -1,4 +1,4 @@
-import api from "../index";
+import { api } from "@/lib/api-client";
 
 export const createBlockchainAccount = async (data: any, token: string) => {
   const response = await api.post(`/contract/create-account`, data, {
@@ -7,14 +7,21 @@ export const createBlockchainAccount = async (data: any, token: string) => {
   return response.data;
 };
 
-export const getContractDashboard = async (userAddress: string, token: string) => {
+export const getContractDashboard = async (
+  userAddress: string,
+  token: string
+) => {
   const response = await api.get(`/contract/dashboard/${userAddress}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
-export const getTokenBalance = async (userAddress: string, symbol: string, token: string) => {
+export const getTokenBalance = async (
+  userAddress: string,
+  symbol: string,
+  token: string
+) => {
   const response = await api.get(`/contract/balance/${userAddress}/${symbol}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -29,96 +36,79 @@ export const convertTokenToUsd = async (params: any, token: string) => {
   return response.data;
 };
 
-
 export const swapFiatToToken = async (data: any, token: string) => {
-  const response = await api.post(
-    `/contract/swap-fiat-to-token`,
-    data,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  const response = await api.post(`/contract/swap-fiat-to-token`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
 export const swapTokenToFiat = async (data: any, token: string) => {
-  const response = await api.post(
-    `/contract/swap-token-to-fiat`,
-    data,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  const response = await api.post(`/contract/swap-token-to-fiat`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
 export const mintToken = async (data: any, token: string) => {
-  const response = await api.post(
-    `/contract/mint-token`,
-    data,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  const response = await api.post(`/contract/mint-token`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
 // Admin Contract Management APIs
-export const upgradeAccountFactory = async (data: { classHash: string }, token: string) => {
-  const response = await api.post(
-    `/contract/upgrade-account-factory`,
-    data,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+export const upgradeAccountFactory = async (
+  data: { classHash: string },
+  token: string
+) => {
+  const response = await api.post(`/contract/upgrade-account-factory`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
-export const transferFactoryOwnership = async (data: { newOwnerAddress: string }, token: string) => {
-  const response = await api.post(
-    `/contract/transfer-ownership`,
-    data,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+export const transferFactoryOwnership = async (
+  data: { newOwnerAddress: string },
+  token: string
+) => {
+  const response = await api.post(`/contract/transfer-ownership`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
-export const setAccountClassHash = async (data: { classHash: string }, token: string) => {
-  const response = await api.post(
-    `/contract/account_classhash`,
-    data,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+export const setAccountClassHash = async (
+  data: { classHash: string },
+  token: string
+) => {
+  const response = await api.post(`/contract/account_classhash`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
 export const getAccountClassHash = async (token: string) => {
-  const response = await api.get(
-    `/contract/account_classhash`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  const response = await api.get(`/contract/account_classhash`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
-export const addSupportedToken = async (data: { symbol: string; address: string }, token: string) => {
-  const response = await api.post(
-    `/contract/add-supported-token`,
-    data,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+export const addSupportedToken = async (
+  data: { symbol: string; address: string },
+  token: string
+) => {
+  const response = await api.post(`/contract/add-supported-token`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
-export const upgradeLiquidityContract = async (data: { classHash: string }, token: string) => {
+export const upgradeLiquidityContract = async (
+  data: { classHash: string },
+  token: string
+) => {
   const response = await api.post(
     `/contract/upgrade-liquidity-contract`,
     data,
@@ -129,7 +119,10 @@ export const upgradeLiquidityContract = async (data: { classHash: string }, toke
   return response.data;
 };
 
-export const transferLiquidityOwnership = async (data: { newOwnerAddress: string }, token: string) => {
+export const transferLiquidityOwnership = async (
+  data: { newOwnerAddress: string },
+  token: string
+) => {
   const response = await api.post(
     `/contract/transfer-liquidity-ownership`,
     data,
@@ -140,7 +133,10 @@ export const transferLiquidityOwnership = async (data: { newOwnerAddress: string
   return response.data;
 };
 
-export const updatePragmaOracleAddress = async (data: { contractAddress: string }, token: string) => {
+export const updatePragmaOracleAddress = async (
+  data: { contractAddress: string },
+  token: string
+) => {
   const response = await api.post(
     `/contract/upgrade-pragma-oracle-address`,
     data,
@@ -153,26 +149,23 @@ export const updatePragmaOracleAddress = async (data: { contractAddress: string 
 
 // Event Listener APIs
 export const getEventListenerStatus = async (token: string) => {
-  const response = await api.get(
-    `/contract/event-listener/status`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  const response = await api.get(`/contract/event-listener/status`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
 export const getActiveSubscriptions = async (token: string) => {
-  const response = await api.get(
-    `/contract/event-listener/subscriptions`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  const response = await api.get(`/contract/event-listener/subscriptions`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
-export const subscribeToTransaction = async (transactionHash: string, token: string) => {
+export const subscribeToTransaction = async (
+  transactionHash: string,
+  token: string
+) => {
   const response = await api.post(
     `/contract/event-listener/subscribe-transaction/${transactionHash}`,
     {},
@@ -183,7 +176,10 @@ export const subscribeToTransaction = async (transactionHash: string, token: str
   return response.data;
 };
 
-export const unsubscribeFromEvent = async (subscriptionId: string, token: string) => {
+export const unsubscribeFromEvent = async (
+  subscriptionId: string,
+  token: string
+) => {
   const response = await api.post(
     `/contract/event-listener/unsubscribe/${subscriptionId}`,
     {},

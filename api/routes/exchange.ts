@@ -1,4 +1,4 @@
-import api from "../index";
+import { api } from "@/lib/api-client";
 
 export const createExchangeRate = async (rateData: any, token: string) => {
   const response = await api.post(`/exchange-rate`, rateData, {

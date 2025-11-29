@@ -3,7 +3,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { WalletCard } from "@/components/ui/WalletCard";
 
 export default function Home() {
   const { user, isLoading } = useAuth();
@@ -28,15 +27,5 @@ export default function Home() {
     return null;
   }
 
-  // Demo wallet card for authenticated users
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-      <WalletCard
-        currency="United States Dollar"
-        balance={0.11}
-        showBalance={showBalance}
-        onToggleBalance={() => setShowBalance((prev) => !prev)}
-      />
-    </div>
-  );
+  return null;
 }

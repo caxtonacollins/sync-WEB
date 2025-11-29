@@ -1,15 +1,13 @@
 import { User } from "@/types/types";
 import { AxiosError } from "axios";
-import api from "../index";
+import { api } from "@/lib/api-client";
 import type { UserRegistrationFormData } from "@/lib/validations/validations";
 
 export const createUser = async (userData: UserRegistrationFormData) => {
   try {
-    const response = await api.post(
-      "/user",
-      userData,
-      { validateStatus: (status) => status < 500 }
-    );
+    const response = await api.post("/user", userData, {
+      validateStatus: (status) => status < 500,
+    });
 
     if (response.status >= 400) {
       throw {
@@ -54,6 +52,13 @@ export const getUserByCryptoAddress = async (
   });
   return response.data;
 };
+
+// export const initializeCryptoBalance = async (userId: string, token: string) => {
+//   const response = await api.post(`/user/${userId}/initialize`, {}, {
+//     headers: { Authorization: `Bearer ${token}` },
+//   });
+//   return response.data;
+// };
 
 export const getUserByEmail = async (email: string, token: string) => {
   const response = await api.get(`/user/email/${email}`, {
@@ -127,20 +132,20 @@ export const resolveAccountNumber = async (
   }
 };
 
-export const provisionAccounts = async (token: string) => {
+export const createCryptoAccountsApi = async (token: string) => {
   try {
     const response = await api.post(
-      '/user/provision-accounts',
+      "/user/provision-crypto-accounts",
       {},
       {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      },
+      }
     );
     return response.data;
   } catch (error) {
-    console.error('Error provisioning accounts:', error);
+    console.error("Error provisioning accounts:", error);
     throw error;
   }
 };

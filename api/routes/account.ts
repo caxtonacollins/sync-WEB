@@ -1,4 +1,4 @@
-import api from "../index";
+import { api } from "@/lib/api-client";
 
 export const addFiatAccount = async (accountData: any, token: string) => {
   const response = await api.post(`/user/fiat-accounts`, accountData, {
@@ -12,7 +12,7 @@ export const addCryptoWallet = async (walletData: any, token: string) => {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
-}
+};
 
 export const getFiatAccounts = async (userId: string, token: string) => {
   const response = await api.get(`/user/${userId}/fiat-accounts`, {
