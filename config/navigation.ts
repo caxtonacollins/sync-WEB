@@ -6,12 +6,8 @@ import {
   BanknotesIcon,
   ArrowPathIcon as ArrowsRightLeftIcon,
   CreditCardIcon,
-  QrCodeIcon,
   Cog6ToothIcon,
-  ShoppingCartIcon,
-  CurrencyDollarIcon,
-  ClockIcon,
-  UserCircleIcon,
+ 
 } from "@heroicons/react/24/outline";
 
 export type UserRole = "USER" | "ADMIN";
