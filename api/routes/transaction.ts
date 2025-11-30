@@ -1,4 +1,6 @@
 import { api } from "@/lib/api-client";
+import { NextApiRequest, NextApiResponse } from "next";
+import { getSession } from "next-auth/react";
 interface TransactionMetadata {
   provider?: string;
   description?: string;
@@ -101,3 +103,44 @@ export const updateTransaction = async (
   });
   return response.data;
 };
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+
+  const { transaction_id, tx_ref } = req.body;
+
+  if (!transaction_id || !tx_ref) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  try {
+    // Call your backend API to verify the transaction
+    const response = await api.post('/transactions/verify-flutterwave', {
+      transaction_id,
+      tx_ref
+    });
+
+    if (!response.data.success) {
+      return res.status(400).json({
+        success: false,
+        message: response.data.message || 'Failed to verify transaction'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: response.data
+    });
+  } catch (error) {
+    console.error('Error verifying transaction:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}

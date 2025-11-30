@@ -12,15 +12,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { format } from "date-fns";
 import {
   CalendarIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-import { Transaction } from "@/types/types";
+import { Transaction } from "@/types/transaction";
 import { TransactionTableRowSkeleton } from "./skeletons/TransactionTableRowSkeleton";
 import Link from "next/link";
+import { format } from "date-fns";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 const TRANSACTION_TYPES = ["all", "deposit", "withdrawal", "swap", "transfer"];

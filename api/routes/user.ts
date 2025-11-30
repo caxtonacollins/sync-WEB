@@ -1,4 +1,4 @@
-import { User } from "@/types/types";
+import { User } from "@/types";
 import { AxiosError } from "axios";
 import { api } from "@/lib/api-client";
 import type { UserRegistrationFormData } from "@/lib/validations/validations";

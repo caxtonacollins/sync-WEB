@@ -1,6 +1,6 @@
 "use client"
 
-import { Transaction } from "@/data/types"
+import { Transaction } from "@/types"
 import Link from "next/link"
 import { TrendingUpIcon } from "lucide-react"
 

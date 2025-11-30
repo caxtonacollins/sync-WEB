@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/contexts/ToastContext"
 import AdminProtectedRoute from "@/components/AdminProtectedRoute"
 import { getUserById, updateUserProfile } from "@/api/routes/user"
-import { User } from "@/types/types"
+import { User } from "@/types"
 import { useParams, useRouter } from "next/navigation"
 import { ArrowLeftIcon } from "@heroicons/react/24/outline"
 
