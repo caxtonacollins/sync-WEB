@@ -68,3 +68,10 @@ export const refreshTokenApi = async (refreshToken: string) => {
     throw error;
   }
 };
+
+export const getSecurityStatus = async (token: string) => {
+  const response = await api.get("/auth/security-status", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};

@@ -67,7 +67,6 @@ export function CurrencySelector({
           className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 rounded-lg border border-gray-700 transition-all duration-200"
         >
           <div className="flex items-center gap-3">
-            <div className="text-2xl">{current.symbol}</div>
             <div className="text-left">
               <div className="text-xs text-gray-400 uppercase tracking-wider">
                 Displaying in
@@ -130,7 +129,7 @@ export function CurrencySelector({
       </div>
 
       {/* Portfolio Info */}
-      <div className="grid grid-cols-2 gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+      {/* <div className="grid grid-cols-2 gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
         <div className="text-center">
           <div className="text-xs text-gray-400 uppercase tracking-wider">
             Fiat Value
@@ -147,7 +146,7 @@ export function CurrencySelector({
             {formatCurrency(totalValueUSD, "USD")}
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

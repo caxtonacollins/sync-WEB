@@ -4,62 +4,86 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
+import { loginWithPasskey, registerPasskey } from "@/lib/passkey";
 
 interface PasskeyLoginProps {
   onSuccess: (response: any) => void;
   onError: (error: Error) => void;
   isRegistration?: boolean;
+  token?: string;
 }
 
-export function PasskeyLogin({ onSuccess, onError, isRegistration = false }: PasskeyLoginProps) {
-  const [isSupported, setIsSupported] = useState<boolean | null>(null);
-  const [error, setError] = useState<string | null>(null);
+export default function PasskeyLogin({
+  onSuccess,
+  onError,
+  isRegistration = false,
+  token
+}: PasskeyLoginProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSupported, setIsSupported] = useState(false);
+  const [registrationOptions, setRegistrationOptions] = useState<any>(null);
+  const [email, setEmail] = useState<string>('');
 
   useEffect(() => {
-    // Check if WebAuthn is supported
-    if (typeof window !== "undefined" && window.PublicKeyCredential) {
-      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
-        .then((available) => setIsSupported(available))
-        .catch(() => setIsSupported(false));
-    } else {
-      setIsSupported(false);
+    // Get the last used email from local storage
+    if (typeof window !== 'undefined') {
+      const lastEmail = localStorage.getItem('lastEmail') || '';
+      setEmail(lastEmail);
     }
   }, []);
 
+  useEffect(() => {
+    const checkSupportAndFetchOptions = async () => {
+      const supported = typeof window !== 'undefined' && !!window.PublicKeyCredential &&
+        await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      setIsSupported(supported);
+
+      if (supported && isRegistration && token) {
+        try {
+          const optionsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/passkey/register-options`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+          if (!optionsRes.ok) throw new Error('Failed to fetch registration options');
+          const options = await optionsRes.json();
+          setRegistrationOptions(options);
+        } catch (err) {
+          setError((err as Error).message);
+        }
+      }
+    };
+
+    checkSupportAndFetchOptions();
+  }, [isRegistration, token]);
+
   const handlePasskeyAuth = async () => {
+    setIsLoading(true);
+    setError(null);
+
     try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Fetch challenge from server
-      const challengeEndpoint = isRegistration ? "/api/auth/passkey/register" : "/api/auth/passkey/authenticate";
-      const challengeResponse = await fetch(challengeEndpoint);
-      const options = await challengeResponse.json();
-
-      // Start registration or authentication
-      const authResponse = await (isRegistration ? startRegistration(options) : startAuthentication(options));
-
-      // Verify with server
-      const verifyEndpoint = isRegistration ? "/api/auth/passkey/register/verify" : "/api/auth/passkey/authenticate/verify";
-      const verifyResponse = await fetch(verifyEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // Important for security
-        body: JSON.stringify(authResponse),
-      });
-
-      if (!verifyResponse.ok) {
-        throw new Error("Failed to verify passkey");
+      let result;
+      if (isRegistration) {
+        if (!token) throw new Error('Registration token is required');
+        if (!registrationOptions) throw new Error('Registration options not loaded yet');
+        result = await registerPasskey(token, registrationOptions);
+      } else {
+        if (!email) {
+          throw new Error('No email found. Please sign in with email first.');
+        }
+        result = await loginWithPasskey(email);
       }
 
-      const result = await verifyResponse.json();
-      onSuccess(result);
+      if (result.success) {
+        onSuccess('data' in result ? result.data : { verified: true });
+      } else {
+        console.error("Passkey operation failed", result);
+        throw new Error("Passkey operation failed");
+      }
     } catch (err) {
-      const error = err as Error;
-      setError(error.message);
-      onError(error);
+      const errorMsg = (err as Error).message;
+      console.error("Passkey operation failed", { success: false, error: errorMsg });
+      setError(errorMsg);
+      onError(err as Error);
     } finally {
       setIsLoading(false);
     }
@@ -89,13 +113,18 @@ export function PasskeyLogin({ onSuccess, onError, isRegistration = false }: Pas
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      {!isRegistration && email && (
+        <div className="text-sm text-gray-600 mb-4">
+          Signing in as: <span className="font-medium">{email}</span>
+        </div>
+      )}
       <Button
         onClick={handlePasskeyAuth}
         className="w-full"
         variant="default"
-        disabled={isLoading}
+        disabled={isLoading || (!isRegistration && !email)}
       >
-        {isLoading ? "Processing..." : (isRegistration ? "Register Passkey" : "Use Passkey")}
+        {isLoading ? "Processing..." : (isRegistration ? "Register Passkey" : `Continue as ${email ? email.split('@')[0] : ''}`)}
       </Button>
     </Card>
   );

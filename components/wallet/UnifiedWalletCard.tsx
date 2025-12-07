@@ -1,15 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
-  CreditCardIcon,
-  CurrencyDollarIcon,
   ChevronDownIcon,
   ClipboardDocumentIcon,
   ClipboardDocumentCheckIcon,
 } from "@heroicons/react/24/outline";
+import { getTokenIcon } from "@/lib/tokenIcons";
+import { FiatIcon } from "@/lib/fiatIcons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatAddress } from "@/lib/utils/formatters";
 import { useWalletVisibility } from "@/contexts/WalletVisibilityContext";
@@ -33,17 +32,11 @@ interface UnifiedWalletCardProps {
   cryptoBalances: WalletBalance[];
   totalValueUSD?: number;
   totalValueNGN?: number;
-  onFiatAction?: () => void;
-  onCryptoAction?: () => void;
 }
 
 export function UnifiedWalletCard({
   fiatBalances = [],
   cryptoBalances = [],
-  totalValueUSD = 0,
-  totalValueNGN = 0,
-  onFiatAction,
-  onCryptoAction,
 }: UnifiedWalletCardProps) {
   const { showBalance } = useWalletVisibility();
   const { addToast } = useToast();
@@ -58,6 +51,29 @@ export function UnifiedWalletCard({
   );
   const [copiedFiat, setCopiedFiat] = useState(false);
   const [copiedCrypto, setCopiedCrypto] = useState(false);
+  
+  const fiatDropdownRef = useRef<HTMLDivElement>(null);
+  const cryptoDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (fiatDropdownRef.current && !fiatDropdownRef.current.contains(event.target as Node) && showFiatDropdown) {
+        setShowFiatDropdown(false);
+      }
+      if (cryptoDropdownRef.current && !cryptoDropdownRef.current.contains(event.target as Node) && showCryptoDropdown) {
+        setShowCryptoDropdown(false);
+      }
+    }
+
+    // Add event listener when component mounts
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Clean up
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFiatDropdown, showCryptoDropdown]);
 
   const copyToClipboard = async (text: string, type: "fiat" | "crypto") => {
     try {
@@ -82,18 +98,9 @@ export function UnifiedWalletCard({
 
   return (
     <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700/50 backdrop-blur-sm hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
-      <CardHeader className="pb-3 border-b border-slate-700/50">
-        <CardTitle className="text-white text-2xl font-bold">
-          Unified Wallet
-        </CardTitle>
-        <p className="text-sm text-gray-400 mt-1">
-          Combined fiat and crypto portfolio
-        </p>
-      </CardHeader>
-
       <CardContent className="pt-6 space-y-6">
         {/* Total Portfolio Overview */}
-        <div className="grid grid-cols-2 gap-4 p-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-lg border border-purple-700/30">
+        {/* <div className="grid grid-cols-2 gap-4 p-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-lg border border-purple-700/30">
           <div>
             <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
               Fiat Balance
@@ -110,16 +117,17 @@ export function UnifiedWalletCard({
               {maskBalance(totalValueUSD, "USD")}
             </div>
           </div>
-        </div>
+        </div> */}
 
         <div className="space-y-4">
           {/* Fiat Wallet Section */}
           <div className="border border-blue-700/30 rounded-lg p-4 bg-blue-900/10 hover:bg-blue-900/20 transition-colors">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-blue-500/20 rounded-lg">
-                  <CreditCardIcon className="h-5 w-5 text-blue-400" />
-                </div>
+                <FiatIcon
+                  code={selectedFiat?.currency || ""}
+                  className="h-8 w-8"
+                />
                 <span className="font-semibold text-blue-300">Fiat Wallet</span>
               </div>
               {selectedFiat?.isDefault && (
@@ -130,27 +138,27 @@ export function UnifiedWalletCard({
             </div>
 
             {/* Fiat Selection Dropdown */}
-            <div className="relative mb-3">
+            <div className="relative mb-3" ref={fiatDropdownRef}>
               <button
                 onClick={() => setShowFiatDropdown(!showFiatDropdown)}
                 className="w-full flex items-center justify-between p-2 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors text-sm"
               >
-                <div className="text-left flex-1">
-                  <div className="font-semibold text-white">
-                    {showBalance && selectedFiat
-                      ? `${
-                          selectedFiat.currency
-                        } ${selectedFiat.balance.toLocaleString()}`
-                      : `${selectedFiat?.currency || "N/A"} ••••••`}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-0.5">
-                    {selectedFiat?.bankName || "No account"}
+                <div className="text-left flex-1 flex items-center gap-2">
+                  <FiatIcon code={selectedFiat?.currency || ""} className="h-6 w-6" />
+                  <div>
+                    <div className="font-semibold text-white">
+                      {showBalance && selectedFiat
+                        ? selectedFiat.balance.toLocaleString()
+                        : "••••••"}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      {selectedFiat?.bankName || "No account"}
+                    </div>
                   </div>
                 </div>
                 <ChevronDownIcon
-                  className={`h-4 w-4 text-gray-400 transition-transform ${
-                    showFiatDropdown ? "rotate-180" : ""
-                  }`}
+                  className={`h-4 w-4 text-gray-400 transition-transform ${showFiatDropdown ? "rotate-180" : ""
+                    }`}
                 />
               </button>
 
@@ -167,12 +175,15 @@ export function UnifiedWalletCard({
                       className="w-full px-3 py-2 hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-0 text-left text-sm"
                     >
                       <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-semibold text-white">
-                            {fiat.currency} {fiat.balance.toLocaleString()}
-                          </div>
-                          <div className="text-xs text-gray-400">
-                            {fiat.bankName}
+                        <div className="flex items-center gap-2">
+                          <FiatIcon code={fiat.currency} className="h-6 w-6" />
+                          <div>
+                            <div className="font-semibold text-white">
+                              {fiat.balance.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              {fiat.bankName}
+                            </div>
                           </div>
                         </div>
                         {fiat.isDefault && (
@@ -214,8 +225,16 @@ export function UnifiedWalletCard({
           <div className="border border-purple-700/30 rounded-lg p-4 bg-purple-900/10 hover:bg-purple-900/20 transition-colors">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-purple-500/20 rounded-lg">
-                  <CurrencyDollarIcon className="h-5 w-5 text-purple-400" />
+                <div className="flex-shrink-0">
+                  <img
+                    src={getTokenIcon(selectedCrypto?.currency || '')}
+                    alt={selectedCrypto?.currency || 'Crypto'}
+                    className="h-8 w-8 rounded-full"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/images/tokens/default-token.png';
+                    }}
+                  />
                 </div>
                 <span className="font-semibold text-purple-300">
                   Crypto Wallet
@@ -229,28 +248,32 @@ export function UnifiedWalletCard({
             </div>
 
             {/* Crypto Selection Dropdown */}
-            <div className="relative mb-3">
+            <div className="relative mb-3" ref={cryptoDropdownRef}>
               <button
                 onClick={() => setShowCryptoDropdown(!showCryptoDropdown)}
                 className="w-full flex items-center justify-between p-2 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors text-sm"
               >
-                <div className="text-left flex-1">
-                  <div className="font-semibold text-white">
-                    {showBalance && selectedCrypto
-                      ? formatCurrency(
-                          selectedCrypto.balance,
-                          selectedCrypto.currency
-                        )
-                      : `${selectedCrypto?.currency || "N/A"} ••••••`}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-0.5">
-                    {selectedCrypto?.network?.toUpperCase() || "STARKNET"}
+                <div className="text-left flex items-center gap-2 flex-1 ">
+                  <img
+                    src={getTokenIcon(selectedCrypto?.currency || '')}
+                    alt={selectedCrypto?.currency || 'Crypto'}
+                    className="h-8 w-8 rounded-full"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/images/tokens/default-token.png';
+                    }}
+                  />
+                  <div className="flex items-center gap-2">
+                    <div className="font-semibold text-white">
+                      {showBalance && selectedCrypto
+                        ? `${selectedCrypto.currency} ${selectedCrypto?.balance}`
+                        : `${selectedCrypto?.currency || "N/A"} ••••••`}
+                    </div>
                   </div>
                 </div>
                 <ChevronDownIcon
-                  className={`h-4 w-4 text-gray-400 transition-transform ${
-                    showCryptoDropdown ? "rotate-180" : ""
-                  }`}
+                  className={`h-4 w-4 text-gray-400 transition-transform ${showCryptoDropdown ? "rotate-180" : ""
+                    }`}
                 />
               </button>
 
@@ -268,11 +291,21 @@ export function UnifiedWalletCard({
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="font-semibold text-white">
-                            {formatCurrency(crypto.balance, crypto.currency)}
-                          </div>
-                          <div className="text-xs text-gray-400">
-                            {crypto.network?.toUpperCase()}
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={getTokenIcon(crypto.currency)}
+                              alt={crypto.currency}
+                              className="h-5 w-5 rounded-full"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = '/images/tokens/default-token.png';
+                              }}
+                            />
+                            <div>
+                              <div className="font-semibold text-white">
+                                {crypto.currency} {crypto.balance}
+                              </div>
+                            </div>
                           </div>
                         </div>
                         {crypto.isDefault && (

@@ -1,13 +1,27 @@
 import type React from "react";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { TransferProvider } from "@/contexts/TransferContext";
 import ReactQueryProvider from "@/contexts/ReactQueryProvider";
 
-const inter = Inter({ subsets: ["latin"] });
+// Primary font for body text - Clean, modern, and highly readable
+const inter = Inter({
+  subsets: ["latin"],
+  display: 'swap',
+  variable: '--font-inter',
+  fallback: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+});
+
+// Secondary font for headings - Slightly more modern and tech-forward
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  display: 'swap',
+  variable: '--font-space-grotesk',
+  fallback: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+});
 
 export const metadata: Metadata = {
   title: "Sync - Modern Payment Platform",
@@ -41,8 +55,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+      <body className="font-sans">
         <ReactQueryProvider>
           <AuthProvider>
             <ToastProvider>

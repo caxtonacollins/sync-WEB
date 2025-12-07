@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   ArrowDownTrayIcon,
   PaperAirplaneIcon,
@@ -17,8 +17,8 @@ import { formatCurrency } from "@/lib/utils/formatters";
 
 interface ActionButtonsProps {
   onFund: () => void;
-  onSend: () => void;
   onSwap: () => void;
+  onTransfer: () => void;
   onMore: () => void;
   showBridge?: boolean;
 }
@@ -32,41 +32,59 @@ interface MoreActionItem {
 
 export function ActionButtons({
   onFund,
-  onSend,
   onSwap,
   onMore,
+  onTransfer,
   showBridge = true,
 }: ActionButtonsProps) {
   const { showBalance, toggleBalance } = useWalletVisibility();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setShowMoreMenu(false);
+      }
+    }
+
+    // Bind the event listener
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      // Unbind the event listener on clean up
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [moreMenuRef]);
+
+  const handleMoreAction = (action: MoreActionItem) => {
+    action.onClick();
+    setShowMoreMenu(false);
+  };
 
   const moreActions: MoreActionItem[] = [
     {
-      label: "Generate QR Code",
+      label: "Airtime",
       icon: "📱",
       onClick: () => {
-        setShowMoreMenu(false);
         onMore();
       },
     },
     ...(showBridge
       ? [
           {
-            label: "Bridge Liquidity",
-            icon: "🌉",
+            label: "Data",
+            icon: "📡",
             onClick: () => {
-              setShowMoreMenu(false);
-              // Bridge action will be handled by parent
               onMore();
             },
           },
         ]
       : []),
     {
-      label: "View Settlements",
-      icon: "📋",
+      label: "Electricity",
+      icon: "⚡",
       onClick: () => {
-        setShowMoreMenu(false);
         onMore();
       },
     },
@@ -86,15 +104,6 @@ export function ActionButtons({
         </Button>
 
         <Button
-          onClick={onSend}
-          className="w-full bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/50 transform hover:scale-[1.02]"
-          size="sm"
-        >
-          <PaperAirplaneIcon className="h-4 w-4 mr-2" />
-          Send
-        </Button>
-
-        <Button
           onClick={onSwap}
           className="w-full bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/50 transform hover:scale-[1.02]"
           size="sm"
@@ -103,7 +112,16 @@ export function ActionButtons({
           Swap
         </Button>
 
-        <div className="relative">
+        <Button
+          onClick={onTransfer}
+          className="w-full bg-gradient-to-br from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 transition-all duration-200 hover:shadow-lg hover:shadow-yellow-500/50 transform hover:scale-[1.02]"
+          size="sm"
+        >
+          <ArrowPathIcon className="h-4 w-4 mr-2" />
+          Transfer
+        </Button>
+
+        <div className="relative" ref={moreMenuRef}>
           <Button
             onClick={() => setShowMoreMenu(!showMoreMenu)}
             className="w-full bg-gradient-to-br from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 transition-all duration-200 hover:shadow-lg hover:shadow-gray-500/50 transform hover:scale-[1.02]"
@@ -119,7 +137,7 @@ export function ActionButtons({
               {moreActions.map((action, idx) => (
                 <button
                   key={idx}
-                  onClick={action.onClick}
+                  onClick={() => handleMoreAction(action)}
                   className="w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors flex items-center gap-3 border-b border-gray-700 last:border-0"
                 >
                   <span className="text-xl">{action.icon}</span>

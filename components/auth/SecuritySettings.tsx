@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MfaSetup } from "./MfaSetup";
-import { PasskeyLogin } from "./PasskeyLogin";
+import PasskeyLogin from "./PasskeyLogin";
 import { BiometricAuth } from "./BiometricAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
@@ -367,6 +367,7 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
             onSuccess={handlePasskeySuccess}
             onError={onError}
             isRegistration
+            token={token || ""}
           />
         </DialogContent>
       </Dialog>
@@ -380,6 +381,7 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
             onSuccess={handleBiometricSuccess}
             onError={onError}
             isRegistration
+            email={user?.email}
           />
         </DialogContent>
       </Dialog>

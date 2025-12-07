@@ -3,13 +3,15 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/contexts/ToastContext"
-import { changePassword } from "@/api/routes/user"
-import { disable2FA, enable2FA, generate2FA } from "@/api/routes/auth"
+import { changePassword as changePasswordApi } from "@/api/routes/user"
+import { disable2FA, enable2FA, generate2FA, getSecurityStatus } from "@/api/routes/auth"
 import Image from "next/image"
+import { registerPasskey } from "@/lib/passkey"
 
 export default function SecuritySettings() {
-  const { user, token } = useAuth()
+  const { user, token, fetchUserDetails } = useAuth()
   const { addToast } = useToast()
+  
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -24,10 +26,23 @@ export default function SecuritySettings() {
   const [isDisabling2FA, setIsDisabling2FA] = useState(false)
   const [showQRCode, setShowQRCode] = useState(false)
 
+  const [isPasskeyEnabled, setIsPasskeyEnabled] = useState(false);
+  const [isRegisteringPasskey, setIsRegisteringPasskey] = useState(false);
+
   useEffect(() => {
-    // This would typically come from the user data or a separate API call
-    setIs2FAEnabled(false) // Default to false for demo
-  }, [])
+    if (user && token) {
+      const fetchStatus = async () => {
+        try {
+          const status = await getSecurityStatus(token);
+          setIs2FAEnabled(status.mfaEnabled);
+          setIsPasskeyEnabled(status.passkeyEnabled);
+        } catch (error) {
+          console.error("Failed to fetch security status", error);
+        }
+      };
+      fetchStatus();
+    }
+  }, [user, token]);
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPasswordData({ ...passwordData, [e.target.name]: e.target.value })
@@ -44,13 +59,15 @@ export default function SecuritySettings() {
 
     setLoadingPassword(true)
     try {
-      await changePassword(user.id, { 
-        password: passwordData.newPassword 
+      await changePasswordApi(user.id, {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
       }, token)
       addToast("Password updated successfully", "success")
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
-    } catch (error) {
-      addToast("Failed to update password", "error")
+    } catch (error) { 
+      const errorMessage = (error as any)?.response?.data?.message || "Failed to update password";
+      addToast(errorMessage, "error");
     } finally {
       setLoadingPassword(false)
     }
@@ -60,7 +77,7 @@ export default function SecuritySettings() {
     if (!token) return;
     try {
       const data = await generate2FA(token);
-      setQrCodeUrl(data.qrCodeUrl);
+      setQrCodeUrl(data.qrCode);
       setShowQRCode(true);
     } catch (error) {
       addToast("Failed to generate 2FA QR code", "error");
@@ -74,10 +91,11 @@ export default function SecuritySettings() {
 
     try {
       await enable2FA(verificationCode, token);
+      addToast("2FA enabled successfully!", "success");
+      await fetchUserDetails(); // Refresh user details
       setIs2FAEnabled(true);
       setShowQRCode(false);
       setVerificationCode("");
-      addToast("2FA enabled successfully!", "success");
     } catch (error) {
       addToast("Failed to enable 2FA. Please check your code.", "error");
     } finally {
@@ -95,12 +113,37 @@ export default function SecuritySettings() {
 
     try {
       await disable2FA(token);
-      setIs2FAEnabled(false);
       addToast("2FA disabled successfully", "success");
+      await fetchUserDetails(); // Refresh user details
+      setIs2FAEnabled(false);
     } catch (error) {
       addToast("Failed to disable 2FA", "error");
     } finally {
       setIsDisabling2FA(false);
+    }
+  };
+
+  const handleRegisterPasskey = async () => {
+    if (!token) {
+      addToast("You need to be logged in to register a passkey", "error");
+      return;
+    }
+    
+    setIsRegisteringPasskey(true);
+    try {
+      const result = await registerPasskey(token);
+      if (result.success) {
+        addToast("Passkey registered successfully!", "success");
+        await fetchUserDetails(); // Refresh user details
+        setIsPasskeyEnabled(true);
+      } else {
+        addToast("Failed to register passkey.", "error");
+      }
+    } catch (error) {
+      console.error("Passkey registration error:", error);
+      addToast("An unexpected error occurred during passkey registration.", "error");
+    } finally {
+      setIsRegisteringPasskey(false);
     }
   };
 
@@ -121,6 +164,7 @@ export default function SecuritySettings() {
               value={passwordData.currentPassword}
               onChange={handlePasswordChange}
               className="form-input"
+              required
             />
           </div>
           <div>
@@ -134,6 +178,7 @@ export default function SecuritySettings() {
               value={passwordData.newPassword}
               onChange={handlePasswordChange}
               className="form-input"
+              required
             />
           </div>
           <div>
@@ -147,6 +192,7 @@ export default function SecuritySettings() {
               value={passwordData.confirmPassword}
               onChange={handlePasswordChange}
               className="form-input"
+              required
             />
           </div>
           <div className="flex justify-end">
@@ -157,6 +203,7 @@ export default function SecuritySettings() {
         </form>
       </div>
 
+      {/* 2FA Section */}
       <div className="border-t border-gray-800 pt-8">
         <h4 className="text-lg font-semibold text-white mb-4">Two-Factor Authentication (2FA)</h4>
         {!is2FAEnabled ? (
@@ -166,18 +213,17 @@ export default function SecuritySettings() {
             ) : (
               <div className="space-y-4">
                 <div>
-                  <h4 className="text-md font-medium text-gray-900">Scan QR Code</h4>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
+                  <h4 className="text-md font-medium text-white">Scan QR Code</h4>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Scan this QR code with your authenticator app.
                   </p>
                   {qrCodeUrl && (
-                    <div className="flex justify-center">
+                    <div className="flex justify-center p-4 bg-white rounded-lg">
                       <Image
-                        src={qrCodeUrl || "/placeholder.svg"}
+                        src={qrCodeUrl}
                         alt="2FA QR Code"
                         width={200}
                         height={200}
-                        className="border rounded-lg"
                       />
                     </div>
                   )}
@@ -186,7 +232,7 @@ export default function SecuritySettings() {
                 <form onSubmit={handleVerifyAndEnable2FA} className="space-y-6">
                   <div className="form-group">
                     <label htmlFor="verificationCode" className="form-label">
-                      Enter verification code from your app
+                      Enter verification code
                     </label>
                     <input
                       type="text"
@@ -199,29 +245,19 @@ export default function SecuritySettings() {
                       className="form-input h-12 text-center text-xl font-mono tracking-widest"
                       required
                     />
-                    <p className="text-sm text-gray-400 mt-1">
-                      Enter the 6-digit code from your authenticator app
-                    </p>
                   </div>
                   <div className="flex space-x-4 pt-2">
                     <button
                       type="submit"
                       disabled={isEnabling2FA}
-                      className="btn-success h-12 px-8 disabled:opacity-50"
+                      className="btn btn-success"
                     >
-                      {isEnabling2FA ? (
-                        <div className="flex items-center">
-                          <div className="loading-spinner h-4 w-4 mr-2"></div>
-                          Verifying...
-                        </div>
-                      ) : (
-                        "Verify & Enable"
-                      )}
+                      {isEnabling2FA ? "Verifying..." : "Verify & Enable"}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowQRCode(false)}
-                      className="btn-secondary h-12 px-8"
+                      className="btn btn-secondary"
                     >
                       Cancel
                     </button>
@@ -236,6 +272,24 @@ export default function SecuritySettings() {
             <button onClick={handleDisable2FA} className="btn btn-danger" disabled={isDisabling2FA}>
               {isDisabling2FA ? "Disabling..." : "Disable 2FA"}
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* Passkey Section */}
+      <div className="border-t border-gray-800 pt-8">
+        <h4 className="text-lg font-semibold text-white mb-4">Passkey / Biometric Sign-in</h4>
+        {!isPasskeyEnabled ? (
+          <div>
+            <p className="text-gray-400 mb-4">Secure your account and sign in with a passkey (e.g., Face ID, fingerprint, or a physical security key).</p>
+            <button onClick={handleRegisterPasskey} className="btn btn-primary" disabled={isRegisteringPasskey}>
+              {isRegisteringPasskey ? "Registering..." : "Register a Passkey"}
+            </button>
+          </div>
+        ) : (
+          <div>
+            <p className="text-gray-400 mb-4">A passkey is registered for this account.</p>
+            <button className="btn btn-danger" disabled>Disable Passkey (Not Implemented)</button>
           </div>
         )}
       </div>

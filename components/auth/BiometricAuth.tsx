@@ -4,15 +4,18 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
+import { loginWithPasskey, registerPasskey } from "@/lib/passkey";
+import { api } from "@/lib/api-client";
 
 interface BiometricAuthProps {
   onSuccess: (response: any) => void;
   onError: (error: Error) => void;
   isRegistration?: boolean;
+  authToken?: string;
+  email?: string;
 }
 
-export function BiometricAuth({ onSuccess, onError, isRegistration = false }: BiometricAuthProps) {
+export function BiometricAuth({ onSuccess, onError, isRegistration = false, authToken, email }: BiometricAuthProps) {
   const [isSupported, setIsSupported] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,43 +36,47 @@ export function BiometricAuth({ onSuccess, onError, isRegistration = false }: Bi
       setIsLoading(true);
       setError(null);
 
-      // Fetch challenge from server
-      const challengeEndpoint = isRegistration ? "/api/auth/biometric/register" : "/api/auth/biometric/authenticate";
-      const challengeResponse = await fetch(challengeEndpoint, {
-        credentials: "include",
-      });
+      if (isRegistration) {
+        if (!authToken) {
+          throw new Error('Auth token is required for registration');
+        }
+        
+        if (!email) {
+          throw new Error('Email is required for biometric registration');
+        }
 
-      if (!challengeResponse.ok) {
-        throw new Error("Failed to get challenge");
+        // First, fetch the registration options
+        const optionsRes = await api.get(`/auth/passkey/register-options`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+
+        if (!optionsRes.data) {
+          throw new Error('Failed to get registration options');
+        }
+
+        const options = optionsRes.data;
+
+        // Then call registerPasskey with both token and options
+        const response = await registerPasskey(authToken, options);
+        if (response.success) {
+          onSuccess(response);
+        } else {
+          throw new Error(response.error || 'Biometric registration failed');
+        }
+      } else {
+        if (!email) {
+          throw new Error('Email is required for passkey login');
+        }
+        const response = await loginWithPasskey(email);
+        if (response.success) {
+          onSuccess(response.data);
+        } else {
+          throw new Error(response.error || 'Biometric authentication failed');
+        }
       }
-
-      const options = await challengeResponse.json();
-
-      // Ensure the authenticator prefers platform (biometric) verification
-      options.authenticatorSelection = {
-        ...options.authenticatorSelection,
-        authenticatorAttachment: "platform",
-        userVerification: "required",
-      };
-
-      // Start biometric registration or authentication
-      const authResponse = await (isRegistration ? startRegistration(options) : startAuthentication(options));
-
-      // Verify with server
-      const verifyEndpoint = isRegistration ? "/api/auth/biometric/register/verify" : "/api/auth/biometric/authenticate/verify";
-      const verifyResponse = await fetch(verifyEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(authResponse),
-      });
-
-      if (!verifyResponse.ok) {
-        throw new Error("Failed to verify biometric authentication");
-      }
-
-      const result = await verifyResponse.json();
-      onSuccess(result);
     } catch (err) {
       const error = err as Error;
       setError(error.message);

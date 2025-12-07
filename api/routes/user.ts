@@ -82,7 +82,7 @@ export const updateUserProfile = async (
 
 export const changePassword = async (
   userId: string,
-  passwordData: { password: string },
+  passwordData: { currentPassword: string; newPassword: string },
   token: string
 ) => {
   const response = await api.post(

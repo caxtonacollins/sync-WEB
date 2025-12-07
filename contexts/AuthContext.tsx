@@ -105,6 +105,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<LoginResult>;
+  handlePasskeyLogin: (data: any) => void;
   loginWithToken: (token: string, refresh_token: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
@@ -280,6 +281,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.id, clearAuthData, router]);
 
+  const handlePasskeyLogin = useCallback(async (data: any) => {
+    setLoadingStatus("Finalizing login...");
+    try {
+      const {
+        access_token: newToken,
+        refresh_token: newRefreshToken,
+        user: newUser,
+      } = data;
+
+      if (!newToken || !newRefreshToken || !newUser) {
+        throw new Error("Invalid response from server");
+      }
+
+      setToken(newToken);
+      setRefreshTokenValue(newRefreshToken);
+      setLastEmail(newUser.email);
+
+      if (newUser.id) {
+        setLoadingStatus("Fetching user data...");
+        await fetchCompleteUserData(newUser.id, newToken);
+      }
+
+      if (newUser.role === "ADMIN") {
+        router.push("/admin");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (error) {
+      console.error("[AuthContext] Passkey login failed:", error);
+    }
+  }, [router, fetchCompleteUserData, setLastEmail]);
+
   const login = useCallback(async (email: string, password: string): Promise<LoginResult> => {
     setLoadingStatus("Authenticating...");
     try {
@@ -418,6 +451,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
         lastEmail,
         login,
+        handlePasskeyLogin,
         loginWithToken,
         logout,
         isLoading,

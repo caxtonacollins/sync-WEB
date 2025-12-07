@@ -6,16 +6,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import Image from "next/image";
 import Link from "next/link";
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { EyeIcon, EyeSlashIcon, FingerPrintIcon } from "@heroicons/react/24/outline";
+import { loginWithPasskey } from '@/lib/passkey';
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login, lastEmail, token, clearAuthData, clearLastEmail, loadingStatus } = useAuth();
+  const { login, handlePasskeyLogin, lastEmail, token, clearAuthData, clearLastEmail, loadingStatus } = useAuth();
   const { addToast } = useToast();
   const [isReturningUser, setIsReturningUser] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -41,6 +43,31 @@ export default function LoginPage() {
     } catch (error) {
       console.error("Login error:", error);
       addToast("An unexpected error occurred. Please try again.", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasskeySignIn = async () => {
+    const emailFromStorage = localStorage.getItem('lastEmail');
+    const cleanEmail = emailFromStorage!.replace(/^"|"$/g, '');
+
+    if (!emailFromStorage) {
+      setError('Please enter your email first');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const result = await loginWithPasskey(cleanEmail);
+      if (result.success && result.data) {
+        handlePasskeyLogin(result.data);
+        addToast('Logged in with passkey!', 'success');
+      } else {
+        addToast(result.error || 'Passkey login failed.', 'error');
+      }
+    } catch (error) {
+      console.error('Passkey login error:', error);
+      addToast('An unexpected error occurred during passkey login.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -143,6 +170,29 @@ export default function LoginPage() {
                   : isReturningUser
                   ? "Unlock"
                   : "Sign in"}
+              </button>
+            </div>
+
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-700" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-gray-950 text-gray-400">
+                  or
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={handlePasskeySignIn}
+                disabled={isLoading}
+                className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
+              >
+                <FingerPrintIcon className="h-5 w-5 mr-2" />
+                Sign in with a passkey
               </button>
             </div>
 
