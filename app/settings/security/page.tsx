@@ -3,7 +3,7 @@
 import { useToast } from "@/contexts/ToastContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Layout from "@/components/Layout";
-import { SecuritySettings } from "@/components/auth/SecuritySettings";
+import { SecuritySettings } from "@/components/shared/SecuritySettings";
 
 export default function SecuritySettingsPage() {
   const { addToast } = useToast();

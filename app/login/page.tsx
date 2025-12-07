@@ -73,6 +73,11 @@ export default function LoginPage() {
     }
   };
 
+  const handleContinueWithLastEmail = () => {
+    setIsReturningUser(true);
+    setEmail(lastEmail!);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -205,7 +210,6 @@ export default function LoginPage() {
                       setIsReturningUser(false);
                       setEmail("");
                       clearAuthData();
-                      clearLastEmail();
                     }}
                     className="text-indigo-400 hover:text-indigo-300"
                   >
@@ -236,18 +240,44 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* {!isReturningUser && (
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-700" />
+            {lastEmail && !isLoading && !isReturningUser && (
+              <div className="space-y-4 mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-700" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="px-3 text-sm font-medium text-gray-400 bg-gray-950">
+                      or continue with
+                    </span>
+                  </div>
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-gray-950 text-gray-400">
-                    or continue with
+                <button
+                  type="button"
+                  onClick={handleContinueWithLastEmail}
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-center px-4 py-3 border-2 border-gray-700 rounded-lg shadow-sm text-sm font-medium text-gray-200 bg-gray-800/50 hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed group"
+                >
+                  <span className="truncate max-w-[280px]" title={lastEmail}>
+                    {lastEmail}
                   </span>
-                </div>
+                  <svg 
+                    className="ml-2 w-4 h-4 text-gray-400 group-hover:text-indigo-400 transition-colors" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24" 
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M14 5l7 7m0 0l-7 7m7-7H3" 
+                    />
+                  </svg>
+                </button>
               </div>
-            )} */}
+            )}
           </form>
         </div>
       </div>

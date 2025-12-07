@@ -349,8 +349,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoadingStatus("Fetching user data...");
         const fullUser = await fetchCompleteUserData(newUser.id, newToken);
 
-        console.log("Full user data:", fullUser);
-
         if (fullUser && (fullUser.cryptoWallets.length === 0)) {
           try {
             setIsProvisioning(true);

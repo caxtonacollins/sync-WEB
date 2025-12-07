@@ -7,12 +7,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { MfaSetup } from "./MfaSetup";
-import PasskeyLogin from "./PasskeyLogin";
-import { BiometricAuth } from "./BiometricAuth";
+import { MfaSetup } from "@/components/auth/MfaSetup";
+import PasskeyLogin from "@/components/auth/PasskeyLogin";
+import { BiometricAuth } from "@/components/auth/BiometricAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { setPin, changePin } from "@/api/routes/security";
+import { api } from "@/lib/api-client";
 
 interface SecuritySettingsProps {
   onUpdate: (settings: any) => void;
@@ -47,10 +48,9 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
   const fetchSecurityStatus = async () => {
     try {
       setIsLoading(true);
-      const { data } = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/security/status`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const { data } = await api.get("/auth/security/status", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setStatus(data);
     } catch (err: any) {
       const message = err?.response?.data?.message || err.message || "Failed to fetch security status";
@@ -61,19 +61,19 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
     }
   };
 
-  const handleMfaSuccess = async (result: any) => {
+  const handleMfaSuccess = async () => {
     setActiveDialog(null);
     setStatus((prev) => prev ? { ...prev, mfaEnabled: true } : null);
     onUpdate({ mfaEnabled: true });
   };
 
-  const handlePasskeySuccess = async (result: any) => {
+  const handlePasskeySuccess = async () => {
     setActiveDialog(null);
     setStatus((prev) => prev ? { ...prev, passkeyEnabled: true } : null);
     onUpdate({ passkeyEnabled: true });
   };
 
-  const handleBiometricSuccess = async (result: any) => {
+  const handleBiometricSuccess = async () => {
     setActiveDialog(null);
     setStatus((prev) => prev ? { ...prev, biometricsEnabled: true } : null);
     onUpdate({ biometricsEnabled: true });
@@ -88,8 +88,7 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
         throw new Error("New passwords don't match");
       }
 
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/security/password`,
+      await api.post(`/auth/security/password`,
         {
           currentPassword: newPassword.current,
           newPassword: newPassword.new,
@@ -114,8 +113,8 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
       setIsLoading(true);
       setError(null);
 
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/security/${type}/disable`,
+      await api.post(
+        `/auth/security/${type}/disable`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -366,7 +365,7 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
           <PasskeyLogin
             onSuccess={handlePasskeySuccess}
             onError={onError}
-            isRegistration
+            isRegistration={true}
             token={token || ""}
           />
         </DialogContent>
@@ -380,7 +379,7 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
           <BiometricAuth
             onSuccess={handleBiometricSuccess}
             onError={onError}
-            isRegistration
+            isRegistration={true}
             email={user?.email}
           />
         </DialogContent>
@@ -416,15 +415,12 @@ export function SecuritySettings({ onUpdate, onError }: SecuritySettingsProps) {
                 onChange={(e) => setNewPassword(prev => ({ ...prev, confirm: e.target.value }))}
               />
             </div>
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setActiveDialog(null)}>
                 Cancel
               </Button>
-              <Button
-                onClick={handlePasswordChange}
-                disabled={!newPassword.current || !newPassword.new || !newPassword.confirm || isLoading}
-              >
-                {isLoading ? "Changing..." : "Change Password"}
+              <Button onClick={handlePasswordChange} disabled={isLoading}>
+                {isLoading ? "Updating..." : "Update Password"}
               </Button>
             </div>
           </div>

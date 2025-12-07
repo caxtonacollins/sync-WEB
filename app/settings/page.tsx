@@ -7,7 +7,7 @@ import { Cog6ToothIcon, UserCircleIcon, ShieldCheckIcon, DocumentCheckIcon } fro
 import ProfileSettings from "@/components/settings/ProfileSettings"
 
 // Placeholder components for each settings tab
-import SecuritySettings from "@/components/settings/SecuritySettings"
+import { SecuritySettings } from "@/components/shared/SecuritySettings"
 import KycSettings from "@/components/settings/KycSettings"
 
 const tabs = [
@@ -51,7 +51,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="fade-in">
-            <ActiveComponent />
+            <ActiveComponent onUpdate={() => { }} onError={() => { }} />
           </div>
         </div>
       </Layout>

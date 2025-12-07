@@ -59,18 +59,6 @@ const userNavigation: NavigationItem[] = [
     description: "Swap between currencies",
   },
   {
-    name: "Profile",
-    href: "/profile",
-    icon: UserIcon,
-    description: "Manage your account",
-  },
-  {
-    name: "Security",
-    href: "/settings/security",
-    icon: ShieldCheckIcon,
-    description: "Security settings",
-  },
-  {
     name: "Settings",
     href: "/settings",
     icon: Cog6ToothIcon,

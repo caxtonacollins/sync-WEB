@@ -11,13 +11,16 @@ export async function registerPasskey(token: string, options: any) {
     const attestation = await startRegistration(options);
 
     // Verify the registration with the server
-    const verificationRes = await api.post(`/auth/passkey/register-verify`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      data: attestation,
-    });
+    const verificationRes = await api.post(
+      '/auth/passkey/register-verify',
+      attestation,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
 
     const verificationJSON = verificationRes.data;
 

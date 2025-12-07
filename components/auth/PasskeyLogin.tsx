@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { loginWithPasskey, registerPasskey } from "@/lib/passkey";
+import { api } from "@/lib/api-client";
 
 interface PasskeyLoginProps {
   onSuccess: (response: any) => void;
@@ -41,11 +42,11 @@ export default function PasskeyLogin({
 
       if (supported && isRegistration && token) {
         try {
-          const optionsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/passkey/register-options`, {
+          const optionsRes = await api.get(`/auth/passkey/register-options`, {
             headers: { 'Authorization': `Bearer ${token}` },
           });
-          if (!optionsRes.ok) throw new Error('Failed to fetch registration options');
-          const options = await optionsRes.json();
+          if (!optionsRes.data) throw new Error('Failed to fetch registration options');
+          const options = optionsRes.data;
           setRegistrationOptions(options);
         } catch (err) {
           setError((err as Error).message);
@@ -62,6 +63,10 @@ export default function PasskeyLogin({
 
     try {
       let result;
+      console.log("isRegistration", isRegistration);
+      console.log("token", token);
+      console.log("registrationOptions", registrationOptions);
+      console.log("email", email);
       if (isRegistration) {
         if (!token) throw new Error('Registration token is required');
         if (!registrationOptions) throw new Error('Registration options not loaded yet');

@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import UserLayout from "@/components/user/UserLayout";
 
 interface LayoutProps {
