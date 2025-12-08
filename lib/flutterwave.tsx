@@ -1,9 +1,9 @@
 import React from 'react';
-import { FlutterWaveButton as BaseFlutterWaveButton } from 'flutterwave-react-v3';
+import { FlutterWaveButton as BaseFlutterWaveButton, FlutterWaveTypes } from 'flutterwave-react-v3';
 
 declare global {
   interface Window {
-    FlutterwaveCheckout?: any;
+    FlutterwaveCheckout: any;
   }
 }
 
@@ -26,18 +26,18 @@ export interface FlutterwaveConfig {
   public_key: string;
   tx_ref: string;
   amount: number;
-  currency: Currency;
-  payment_options?: PaymentMethod[] | string;
+  currency?: string;
+  payment_options: string;
   customer: {
     email: string;
-    phone_number?: string;
+    phone_number: string;
     name: string;
   };
   meta?: Record<string, string>;
-  customizations?: {
+  customizations: {
     title: string;
     description: string;
-    logo?: string;
+    logo: string;
   };
   callback: (response: FlutterwaveResponse) => void;
   onclose: () => void;
@@ -48,7 +48,7 @@ export interface FlutterwaveConfig {
     transaction_charge: number;
   }>;
   integrity_hash?: string;
-  payment_plan?: string | number;
+  payment_plan?: string;
   subaccount?: {
     id: string;
     transaction_split_ratio?: number;
@@ -58,23 +58,22 @@ export interface FlutterwaveConfig {
 }
 
 export interface FlutterwaveResponse {
-  amount: number;
-  currency: Currency; // Changed from string to Currency type
+  currency?: string;
   customer: {
     email: string;
     name: string;
     phone_number: string;
   };
   flw_ref: string;
-  status: 'successful' | 'failed' | 'pending';
+  status: string;
   transaction_id: number;
   tx_ref: string;
-  payment_plan?: string | number;
+  payment_plan?: string;
   [key: string]: any;
 }
 
 // Type for FlutterWaveButton props
-type FlutterWaveButtonProps = Omit<FlutterwaveConfig, 'public_key' | 'onclose'> & {
+type FlutterWaveButtonProps = {
   text?: string;
   className?: string;
   style?: React.CSSProperties;
@@ -82,15 +81,15 @@ type FlutterWaveButtonProps = Omit<FlutterwaveConfig, 'public_key' | 'onclose'> 
   public_key: string;
   onSuccess?: (response: FlutterwaveResponse) => void;
   onClose: () => void;
-  // Add onclose as an alias for onClose for Flutterwave compatibility
   onclose?: () => void;
-};
+  children?: React.ReactNode;
+} & Omit<FlutterwaveConfig, 'public_key' | 'onclose'>;
 
 // The FlutterWaveButton component will handle script loading automatically
 export const FlutterwaveButtonWrapper: React.FC<{
   config: Omit<FlutterwaveConfig, 'public_key'>;
   className?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }> = ({ config, className, children }) => {
   const publicKey = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY || '';
   

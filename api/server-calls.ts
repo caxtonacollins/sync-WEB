@@ -21,3 +21,4 @@ export * as exchangeApi from "./routes/exchange";
 export * as contractApi from "./routes/contract";
 export * as adminApi from "./routes/admin";
 export * as walletApi from "./routes/wallet";
+export * as flutterwaveApi from "./routes/flutterwave";

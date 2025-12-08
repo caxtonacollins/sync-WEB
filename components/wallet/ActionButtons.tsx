@@ -3,17 +3,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   ArrowDownTrayIcon,
-  PaperAirplaneIcon,
   ArrowPathIcon,
   EllipsisHorizontalIcon,
   EyeIcon,
   EyeSlashIcon,
-  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useWalletVisibility } from "@/contexts/WalletVisibilityContext";
-import { formatCurrency } from "@/lib/utils/formatters";
 
 interface ActionButtonsProps {
   onFund: () => void;
