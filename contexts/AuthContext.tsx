@@ -4,8 +4,9 @@ import type React from "react";
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useRouter } from "next/navigation";
-import { loginApi, refreshTokenApi } from "@/api/routes/auth";
+import { loginApi, logoutApi, refreshTokenApi } from "@/api/routes/auth";
 import { createCryptoAccountsApi, getDashboardData, getUserById } from "@/api/routes/user";
+import { api } from "@/lib/api-client";
 
 export interface FiatAccount {
   id: string;
@@ -97,7 +98,6 @@ interface LoginResult {
   success: boolean;
   error?: string;
   access_token?: string;
-  refresh_token?: string;
   user?: User;
 }
 
@@ -106,14 +106,16 @@ interface AuthContextType {
   token: string | null;
   login: (email: string, password: string) => Promise<LoginResult>;
   handlePasskeyLogin: (data: any) => void;
-  loginWithToken: (token: string, refresh_token: string) => Promise<boolean>;
-  logout: () => void;
+  loginWithToken: (token: string) => Promise<boolean>;
+  logout: () => Promise<void>;
   isLoading: boolean;
   lastEmail: string | null;
   clearAuthData: () => void;
   clearLastEmail: () => void;
   fetchUser: () => Promise<void>;
-  refreshToken: () => Promise<boolean>;
+  refreshToken: (
+    redirectOnFail?: boolean
+  ) => Promise<{ success: boolean; accessToken?: string; user?: User }>;
   fetchUserDetails: () => Promise<void>;
   getFiatAccounts: () => FiatAccount[];
   getCryptoWallets: () => CryptoWallet[];
@@ -129,7 +131,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [refreshTokenValue, setRefreshTokenValue] = useState<string | null>(null);
   const [lastEmail, setLastEmail] = useLocalStorage<string | null>("lastEmail", null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProvisioning, setIsProvisioning] = useState(false);
@@ -138,14 +139,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Prevent multiple simultaneous refresh attempts
   const isRefreshing = useRef(false);
-  const refreshPromise = useRef<Promise<boolean> | null>(null);
+  const refreshPromise = useRef<
+    Promise<{ success: boolean; accessToken?: string; user?: User }> | null
+  >(null);
 
   const clearAuthData = useCallback(() => {
     // Clear in-memory state
     setToken(null);
-    setRefreshTokenValue(null);
     setUser(null);
-
+    api.clearAuthTokens();
     isRefreshing.current = false;
     refreshPromise.current = null;
   }, []);
@@ -183,21 +185,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [token]);
 
-  // Initialize auth state on mount
+  const refreshToken = useCallback(
+    async (
+      redirectOnFail = true
+    ): Promise<{ success: boolean; accessToken?: string; user?: User }> => {
+      // Prevent multiple simultaneous refresh attempts
+      if (isRefreshing.current && refreshPromise.current) {
+        return refreshPromise.current;
+      }
+
+      isRefreshing.current = true;
+
+      refreshPromise.current = (async () => {
+        try {
+          const data = await refreshTokenApi();
+          const { access_token: newToken, user: refreshedUser } = data;
+
+          setToken(newToken);
+          api.setAccessToken(newToken);
+          if (refreshedUser) {
+            setUser(refreshedUser);
+          }
+
+          return { success: true, accessToken: newToken, user: refreshedUser };
+        } catch (error) {
+          console.error("[AuthContext] Token refresh failed:", error);
+          clearAuthData();
+          if (redirectOnFail) {
+            router.push("/login");
+          }
+          return { success: false };
+        } finally {
+          isRefreshing.current = false;
+          refreshPromise.current = null;
+        }
+      })();
+
+      return refreshPromise.current;
+    },
+    [clearAuthData, router]
+  );
+
+  // Initialize auth state on mount (silent refresh using HttpOnly cookie)
   useEffect(() => {
     const init = async () => {
       try {
-
-        // Set in-memory state
-        setToken(token);
-        setRefreshTokenValue(refreshTokenValue);
-
-        // Fetch complete user data with relations from backend
-        if (user && token) {
-          await fetchCompleteUserData(user.id, token);
+        const refreshed = await refreshToken(false);
+        if (refreshed.success && refreshed.accessToken) {
+          const refreshedUserId = refreshed.user?.id;
+          if (refreshedUserId) {
+            await fetchCompleteUserData(refreshedUserId, refreshed.accessToken);
+          }
         }
-
-        console.log("[AuthContext] Migration complete - using secure in-memory storage");
       } catch (error) {
         console.error("[AuthContext] Init error:", error);
         clearAuthData();
@@ -207,54 +246,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     init();
-  }, [clearAuthData, fetchCompleteUserData]);
-
-  const refreshToken = useCallback(async (): Promise<boolean> => {
-    // Prevent multiple simultaneous refresh attempts
-    if (isRefreshing.current && refreshPromise.current) {
-      return refreshPromise.current;
-    }
-
-    isRefreshing.current = true;
-
-    refreshPromise.current = (async () => {
-      try {
-        if (!refreshTokenValue) {
-          throw new Error("No refresh token available");
-        }
-
-        console.log("[AuthContext] Refreshing access token...");
-        const data = await refreshTokenApi(refreshTokenValue);
-        const { accessToken: newToken, refreshToken: newRefreshToken } = data;
-
-        // Update in-memory state only
-        setToken(newToken);
-        setRefreshTokenValue(newRefreshToken);
-
-        console.log("[AuthContext] Token refresh successful");
-        return true;
-      } catch (error) {
-        console.error("[AuthContext] Token refresh failed:", error);
-        clearAuthData();
-        router.push("/login");
-        return false;
-      } finally {
-        isRefreshing.current = false;
-        refreshPromise.current = null;
-      }
-    })();
-
-    return refreshPromise.current;
-  }, [refreshTokenValue, clearAuthData, router]);
+  }, [clearAuthData, fetchCompleteUserData, refreshToken]);
 
   const loginWithToken = useCallback(async (
     existingToken: string,
-    existingRefreshToken: string
   ): Promise<boolean> => {
     try {
       // Set tokens in memory
       setToken(existingToken);
-      setRefreshTokenValue(existingRefreshToken);
+      api.setAccessToken(existingToken);
 
       // Fetch complete user data
       const userData = await getUserById(user?.id || "", existingToken);
@@ -286,32 +286,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const {
         access_token: newToken,
-        refresh_token: newRefreshToken,
         user: newUser,
       } = data;
 
-      if (!newToken || !newRefreshToken || !newUser) {
+      if (!newToken || !newUser) {
         throw new Error("Invalid response from server");
       }
 
       setToken(newToken);
-      setRefreshTokenValue(newRefreshToken);
+      api.setAccessToken(newToken);
       setLastEmail(newUser.email);
 
       if (newUser.id) {
         setLoadingStatus("Fetching user data...");
-        await fetchCompleteUserData(newUser.id, newToken);
-      }
-
-      if (newUser.role === "ADMIN") {
-        router.push("/admin");
+        const fullUser = await fetchCompleteUserData(newUser.id, newToken);
+        
+        // Use the fetched user data for redirect decision
+        if (fullUser.role === "ADMIN") {
+          router.push("/admin");
+        } else {
+          router.push("/dashboard");
+        }
       } else {
-        router.push("/dashboard");
+        // Fallback to newUser if fetch fails (shouldn't happen)
+        if (newUser.role === "ADMIN") {
+          router.push("/admin");
+        } else {
+          router.push("/dashboard");
+        }
       }
     } catch (error) {
       console.error("[AuthContext] Passkey login failed:", error);
+      clearAuthData();
+      router.push("/login");
     }
-  }, [router, fetchCompleteUserData, setLastEmail]);
+  }, [router, fetchCompleteUserData, setLastEmail, clearAuthData]);
 
   const login = useCallback(async (email: string, password: string): Promise<LoginResult> => {
     setLoadingStatus("Authenticating...");
@@ -331,17 +340,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const {
         access_token: newToken,
-        refresh_token: newRefreshToken,
         user: newUser,
       } = data;
 
 
-      if (!newToken || !newRefreshToken || !newUser) {
+      if (!newToken || !newUser) {
         throw new Error("Invalid response from server");
       }
 
       setToken(newToken);
-      setRefreshTokenValue(newRefreshToken);
+      api.setAccessToken(newToken);
       setLastEmail(newUser.email);
 
       // Fetch complete user data with all relations (fiatAccounts, cryptoWallets, etc.)
@@ -375,7 +383,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         success: true,
         user: newUser as User,
         access_token: newToken,
-        refresh_token: newRefreshToken,
       };
     } catch (error) {
       console.error("[AuthContext] Login failed:", error);
@@ -386,8 +393,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [router]);
 
-  const logout = useCallback(() => {
-    console.log("[AuthContext] Logging out...");
+  const logout = useCallback(async () => {
+    try {
+      await logoutApi();
+    } catch (error) {
+      console.error("[AuthContext] Logout API failed:", error);
+    }
     clearAuthData();
     router.push("/login");
   }, [clearAuthData, router]);

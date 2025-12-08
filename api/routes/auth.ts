@@ -55,14 +55,24 @@ export const disable2FA = async (token: string) => {
   return response.data;
 };
 
-export const refreshTokenApi = async (refreshToken: string) => {
+export const refreshTokenApi = async () => {
   try {
     const response = await api.post(
-      "/auth/refresh-token",
-      { refreshToken },
+      "/auth/refresh",
+      {},
       { headers: { "Content-Type": "application/json" } }
     );
-    return response.data as { accessToken: string; refreshToken: string };
+
+    const { access_token, user } = response.data as {
+      access_token: string;
+      user?: any;
+    };
+
+    if (!access_token) {
+      throw new Error("No access token returned");
+    }
+
+    return { access_token, user };
   } catch (error) {
     console.error("Error refreshing token:", error);
     throw error;
@@ -73,5 +83,10 @@ export const getSecurityStatus = async (token: string) => {
   const response = await api.get("/auth/security-status", {
     headers: { Authorization: `Bearer ${token}` },
   });
+  return response.data;
+};
+
+export const logoutApi = async () => {
+  const response = await api.post("/auth/logout", {});
   return response.data;
 };

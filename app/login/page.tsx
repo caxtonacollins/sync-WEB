@@ -18,7 +18,12 @@ export default function LoginPage() {
   const { addToast } = useToast();
   const [isReturningUser, setIsReturningUser] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const storedEmail = lastEmail;
@@ -60,15 +65,15 @@ export default function LoginPage() {
     try {
       const result = await loginWithPasskey(cleanEmail);
       if (result.success && result.data) {
-        handlePasskeyLogin(result.data);
+        await handlePasskeyLogin(result.data);
         addToast('Logged in with passkey!', 'success');
       } else {
         addToast(result.error || 'Passkey login failed.', 'error');
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Passkey login error:', error);
       addToast('An unexpected error occurred during passkey login.', 'error');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -240,7 +245,7 @@ export default function LoginPage() {
               )}
             </div>
 
-            {lastEmail && !isLoading && !isReturningUser && (
+            {isMounted &&lastEmail && !isLoading && !isReturningUser && (
               <div className="space-y-4 mt-6">
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">

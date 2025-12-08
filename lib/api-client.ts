@@ -1,11 +1,15 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import axios, {
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from 'axios';
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 class ApiClient {
   private instance: AxiosInstance;
   private token: string | null = null;
-  private refreshToken: string | null = null;
   private refreshPromise: Promise<string | null> | null = null;
 
   constructor() {
@@ -14,19 +18,18 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
+      withCredentials: true,
     });
 
     this.initializeInterceptors();
   }
 
-  public setAuthTokens(token: string, refreshToken: string) {
+  public setAccessToken(token: string) {
     this.token = token;
-    this.refreshToken = refreshToken;
   }
 
   public clearAuthTokens() {
     this.token = null;
-    this.refreshToken = null;
   }
 
   private initializeInterceptors() {
@@ -49,7 +52,7 @@ class ApiClient {
       async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry && this.refreshToken) {
+        if (error.response?.status === 401 && !originalRequest._retry) {
           if (this.refreshPromise) {
             // If we're already refreshing, wait for that to complete
             try {
@@ -88,15 +91,23 @@ class ApiClient {
 
   private async handleTokenRefresh(): Promise<string | null> {
     try {
-      if (!this.refreshToken) return null;
-      
-      const response = await axios.post(`${baseURL}/auth/refresh-token`, {
-        refreshToken: this.refreshToken,
-      });
+      const response = await axios.post(
+        `${baseURL}/auth/refresh`,
+        {},
+        {
+          withCredentials: true,
+          validateStatus: (status) => status === 200,
+        },
+      );
 
-      const { accessToken } = response.data;
+      const { access_token: accessToken } = response.data;
+      if (!accessToken) {
+        this.clearAuthTokens();
+        return null
+      };
+
       this.token = accessToken;
-      
+
       return accessToken;
     } catch (error) {
       console.error('Failed to refresh token:', error);
