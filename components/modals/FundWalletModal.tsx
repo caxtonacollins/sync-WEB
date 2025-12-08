@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { flutterwaveApi } from '@/api/routes/flutterwave';
-import { FiatAccount } from '@/api/routes/fiat-accounts';
 import { useAuth } from '@/contexts/AuthContext';
 import { launchFlutterwave } from '@/lib/flutterwave';
 import { useWalletData } from '@/hooks/useWalletData';
@@ -41,11 +40,30 @@ export function FundWalletModal({ isOpen, onClose, onSuccess }: FundWalletModalP
   const displayCurrency = primaryFiatBalance?.currency || 'NGN';
 
   useEffect(() => {
-    if (walletData?.fiatBalances?.length) {
-      setAccounts(walletData.fiatBalances);
-      setSelectedAccountId(walletData.fiatBalances[0].accountId || '');
+    if (isOpen && walletData?.fiatBalances?.length) {
+      // Include all accounts, even if accountId is missing (we'll generate a key)
+      const allAccounts = walletData.fiatBalances.map((account, index) => ({
+        ...account,
+        // Ensure accountId exists, use a fallback if not
+        accountId: account.accountId || `temp-${index}-${account.currency}`
+      }));
+      
+      if (allAccounts.length > 0) {
+        setAccounts(allAccounts);
+        // Only set selectedAccountId if it's not already set or if current selection is invalid
+        const currentSelectionValid = allAccounts.find(acc => acc.accountId === selectedAccountId);
+        if (!selectedAccountId || !currentSelectionValid) {
+          setSelectedAccountId(allAccounts[0].accountId || '');
+        }
+      } else {
+        setAccounts([]);
+        setSelectedAccountId('');
+      }
+    } else if (isOpen && !walletData) {
+      setAccounts([]);
+      setSelectedAccountId('');
     }
-  }, [walletData]);
+  }, [walletData, isOpen]);
 
   const selectedAccount = accounts.find(acc => acc.accountId === selectedAccountId);
   const currency = selectedAccount?.currency || 'NGN'; // Default to NGN if no account selected
@@ -167,90 +185,103 @@ export function FundWalletModal({ isOpen, onClose, onSuccess }: FundWalletModalP
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="ml-2">Loading wallet data...</span>
             </div>
-          ) : walletData?.fiatBalances?.length ? (
-            <div className="bg-muted/50 p-4 rounded-lg mb-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Available Balance:</span>
-                <span className="font-bold">
-                  {displayBalance.toLocaleString(undefined, {
-                    style: 'currency',
-                    currency: displayCurrency,
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                  })}
-                </span>
-              </div>
-              {walletData.fiatBalances.length > 1 && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {walletData.fiatBalances.length - 1} more account{walletData.fiatBalances.length > 2 ? 's' : ''} available
-                </p>
-              )}
-            </div>
-          ) : null}
-
-          {isLoadingAccounts ? (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
           ) : accounts.length > 0 ? (
             <>
               <div>
-                <Label htmlFor="account">Select Account</Label>
+                <Label htmlFor="account">Fund Account</Label>
                 <Select
                   value={selectedAccountId}
                   onValueChange={setSelectedAccountId}
                   disabled={isLoadingAccounts}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select an account" />
+                    <SelectValue placeholder="Select account to fund" />
                   </SelectTrigger>
                   <SelectContent>
-                    {accounts
-                      .filter(account => account.accountId && account.accountId.trim() !== '')
-                      .map((account) => (
-                        <SelectItem 
-                          key={`${account.accountId}-${account.currency}`} 
-                          value={account.accountId}
-                        >
-                          {account.currency} - {account.available}
-                        </SelectItem>
-                      ))}
+                    {accounts.length === 0 ? (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                        No accounts available
+                      </div>
+                    ) : (
+                      accounts.map((account, index) => {
+                        const accountKey = account.accountId || `account-${index}-${account.currency}`;
+                        const accountValue = account.accountId || accountKey;
+                        const displayText = `${account.currency} Account${account.isDefault ? ' (Default)' : ''}`;
+                        const balanceText = account.available.toLocaleString(undefined, {
+                          style: 'currency',
+                          currency: account.currency,
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        });
+                        return (
+                          <SelectItem 
+                            key={accountKey} 
+                            value={accountValue}
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">{displayText}</span>
+                              <span className="text-xs text-muted-foreground">
+                                Balance: {balanceText}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })
+                    )}
                   </SelectContent>
                 </Select>
               </div>
+              {selectedAccount && (
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Current Balance:</span>
+                    <span className="font-bold">
+                      {selectedAccount.available.toLocaleString(undefined, {
+                        style: 'currency',
+                        currency: selectedAccount.currency,
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      })}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {selectedAccount.currency} Account {selectedAccount.isDefault && '• Default Account'}
+                  </div>
+                </div>
+              )}
               <div>
                 <Label htmlFor="amount">Amount ({currency})</Label>
                 <Input
                   id="amount"
                   type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder={`Enter amount in ${currency}`}
-                    min="100"
-                    step="0.01"
-                    required
-                  />
-                  <div className="flex justify-between text-sm text-muted-foreground mt-1">
-                    <span>Minimum amount: 100 {currency}</span>
-                  </div>
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder={`Enter amount in ${currency}`}
+                  min="100"
+                  step="0.01"
+                  required
+                />
+                <div className="flex justify-between text-sm text-muted-foreground mt-1">
+                  <span>Minimum amount: 100 {currency}</span>
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading || !selectedAccountId}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    </>
-                  ) : (
-                    `Proceed to Payment (${currency})`
-                  )}
-                </Button>
-              </>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-muted-foreground">No accounts found. Please create an account first.</p>
-                <Button variant="outline" className="mt-4" onClick={onClose}>
-                  Close
-                </Button>
               </div>
+              <Button type="submit" className="w-full" disabled={isLoading || !selectedAccountId}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  </>
+                ) : (
+                  `Proceed to Payment (${currency})`
+                )}
+              </Button>
+            </>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground">No accounts found. Please create an account first.</p>
+              <Button variant="outline" className="mt-4" onClick={onClose}>
+                Close
+              </Button>
+            </div>
           )}
         </form>
       </DialogContent>

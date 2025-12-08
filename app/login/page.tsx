@@ -169,11 +169,11 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <div>
+            <div className="flex gap-3">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                className="flex-1 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
                 {isLoading
                   ? loadingStatus || "Please wait..."
@@ -181,28 +181,14 @@ export default function LoginPage() {
                   ? "Unlock"
                   : "Sign in"}
               </button>
-            </div>
-
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-700" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-950 text-gray-400">
-                  or
-                </span>
-              </div>
-            </div>
-
-            <div>
               <button
                 type="button"
                 onClick={handlePasskeySignIn}
                 disabled={isLoading}
-                className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
+                className="flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
+                title="Sign in with a passkey"
               >
-                <FingerPrintIcon className="h-5 w-5 mr-2" />
-                Sign in with a passkey
+                <FingerPrintIcon className="h-5 w-5" />
               </button>
             </div>
 
