@@ -16,7 +16,7 @@ import { useToast } from "@/contexts/ToastContext";
 
 interface WalletBalance {
   currency: string;
-  balance: number;
+  available: number;
   accountId?: string;
   accountNumber?: string;
   bankName?: string;
@@ -148,7 +148,7 @@ export function UnifiedWalletCard({
                   <div>
                     <div className="font-semibold text-white">
                       {showBalance && selectedFiat
-                        ? selectedFiat.balance.toLocaleString()
+                        ? selectedFiat.available.toLocaleString()
                         : "••••••"}
                     </div>
                     <div className="text-xs text-gray-400 mt-0.5">
@@ -179,7 +179,7 @@ export function UnifiedWalletCard({
                           <FiatIcon code={fiat.currency} className="h-6 w-6" />
                           <div>
                             <div className="font-semibold text-white">
-                              {fiat.balance.toLocaleString()}
+                              {fiat.available.toLocaleString()}
                             </div>
                             <div className="text-xs text-gray-400">
                               {fiat.bankName}
@@ -266,7 +266,7 @@ export function UnifiedWalletCard({
                   <div className="flex items-center gap-2">
                     <div className="font-semibold text-white">
                       {showBalance && selectedCrypto
-                        ? `${selectedCrypto.currency} ${selectedCrypto?.balance}`
+                        ? `${selectedCrypto.currency} ${selectedCrypto?.available}`
                         : `${selectedCrypto?.currency || "N/A"} ••••••`}
                     </div>
                   </div>
@@ -303,7 +303,7 @@ export function UnifiedWalletCard({
                             />
                             <div>
                               <div className="font-semibold text-white">
-                                {crypto.currency} {crypto.balance}
+                                {crypto.currency} {crypto.available}
                               </div>
                             </div>
                           </div>

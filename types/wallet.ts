@@ -32,12 +32,13 @@ export interface WalletOverview {
 
 export interface WalletBalance {
   currency: string;
-  balance: number;
-  availableBalance: number;
-  lockedBalance: number;
-  valueInFiat: number;
-  fiatCurrency: string;
-  priceChange24h: number;
+  available: number;
+  isDefault: boolean;
+  accountId: string;
+  lockedBalance?: number;
+  valueInFiat?: number;
+  fiatCurrency?: string;
+  priceChange24h?: number;
   icon?: string;
   network?: string;
 }

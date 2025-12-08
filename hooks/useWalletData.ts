@@ -4,19 +4,7 @@ import { useToast } from "@/contexts/ToastContext";
 import { getAllUserTransactions } from "@/api/routes/transaction";
 import { getWalletSummary } from "@/api/routes/wallet";
 import WalletAPI from "@/api/routes/fiat-accounts";
-
-interface WalletBalance {
-  currency: string;
-  balance: number;
-  accountId?: string;
-  accountNumber?: string;
-  bankName?: string;
-  walletId?: string;
-  provider?: string;
-  network?: string;
-  address?: string;
-  isDefault: boolean;
-}
+import { WalletBalance } from "@/types";
 
 export interface UnifiedWalletData {
   userId: string;
@@ -76,15 +64,15 @@ export const useWalletData = () => {
         ...data,
         fiatBalances: data.fiatBalances.map(balance => ({
           ...balance,
-          balance: parseFloat(balance.balance) || 0,
-          accountNumber: balance.accountId, // Map accountId to accountNumber if needed
-          walletId: balance.accountId // Map accountId to walletId if needed
+          available: parseFloat(balance.balance) || 0,
+          accountNumber: balance.accountId,
+          walletId: balance.accountId,
         })),
         cryptoBalances: data.cryptoBalances?.map(balance => ({
           ...balance,
-          balance: parseFloat(balance.balance) || 0,
-          accountId: balance.walletId, // Map walletId to accountId if needed
-          accountNumber: balance.address // Map address to accountNumber if needed
+          available: parseFloat(balance.balance) || 0,
+          accountId: balance.walletId,
+          accountNumber: balance.address,
         })) || [],
         totalValueUSD: parseFloat(data.totalValueUSD as any) || 0,
         totalValueNGN: parseFloat((data as any).totalValueNGN || '0') || 0
