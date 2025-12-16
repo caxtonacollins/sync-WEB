@@ -6,6 +6,7 @@ const tokenIcons: Record<string, string> = {
     'USDT': '/images/tokens/tether-usdt.png',
     'USDC': '/images/tokens/usd-coin.png',
     'STRK': '/images/tokens/starknet.png',
+    'sNGN': '/images/tokens/naira.png',
 };
 
 // Default icon for tokens without a specific logo
