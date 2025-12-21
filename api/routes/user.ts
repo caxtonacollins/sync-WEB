@@ -103,7 +103,7 @@ export const deleteUser = async (userId: string, token: string) => {
 export const getDashboardData = async (userId: string, token: string) => {
   try {
     const { data } = await api.get(
-      `/user/${userId}?fiatAccounts=true&cryptoWallets=true&transactions=true&swapOrders=true`,
+      `/user/${userId}?cryptoWallets=true&transactions=true&swapOrders=true`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

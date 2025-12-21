@@ -9,7 +9,6 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 interface CurrencySelectorProps {
   totalValueUSD?: number;
   totalValueNGN?: number;
-  fiatCurrencies?: string[];
   defaultCurrency?: string;
   onCurrencyChange?: (currency: string) => void;
 }
@@ -17,7 +16,6 @@ interface CurrencySelectorProps {
 export function CurrencySelector({
   totalValueUSD = 0,
   totalValueNGN = 0,
-  fiatCurrencies = ["USD", "NGN"],
   defaultCurrency = "USD",
   onCurrencyChange,
 }: CurrencySelectorProps) {
@@ -26,7 +24,6 @@ export function CurrencySelector({
     "selectedDisplayCurrency",
     defaultCurrency
   );
-  const [showPortfolio, setShowPortfolio] = useState(true);
 
   const currencyOptions = [
     { code: "USD", value: totalValueUSD, symbol: "$" },
@@ -127,26 +124,6 @@ export function CurrencySelector({
           </div>
         )}
       </div>
-
-      {/* Portfolio Info */}
-      {/* <div className="grid grid-cols-2 gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-        <div className="text-center">
-          <div className="text-xs text-gray-400 uppercase tracking-wider">
-            Fiat Value
-          </div>
-          <div className="text-lg font-bold text-white mt-1">
-            {formatCurrency(totalValueNGN, "NGN")}
-          </div>
-        </div>
-        <div className="text-center">
-          <div className="text-xs text-gray-400 uppercase tracking-wider">
-            Crypto Value
-          </div>
-          <div className="text-lg font-bold text-white mt-1">
-            {formatCurrency(totalValueUSD, "USD")}
-          </div>
-        </div>
-      </div> */}
     </div>
   );
 }

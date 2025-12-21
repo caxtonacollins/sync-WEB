@@ -2,49 +2,35 @@
 
 import React, { useState } from "react";
 import { useToast } from "@/contexts/ToastContext";
-import { ArrowPathIcon, ArrowUpOnSquareIcon, BoltIcon, QrCodeIcon, RectangleStackIcon } from "@heroicons/react/24/outline";
+import { QrCodeIcon } from "@heroicons/react/24/outline";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useWalletData } from "@/hooks/useWalletData";
 import { UnifiedWalletCard } from "@/components/wallet/UnifiedWalletCard";
 import { ActionButtons } from "@/components/wallet/ActionButtons";
 import { CurrencySelector } from "@/components/wallet/CurrencySelector";
 import { WalletVisibilityProvider } from "@/contexts/WalletVisibilityContext";
-import ManageLiquidityModal from "@/components/modals/ManageLiquidityModal";
-import ViewSettlementsModal from "@/components/modals/ViewSettlementsModal";
+import ManageLiquidityModal from "@/delete/ManageLiquidityModal";
 import GenerateQRModal from "@/components/modals/GenerateQRModal";
 import ScanQRModal from "@/components/modals/ScanQRModal";
-import SwapModal from "@/components/modals/SwapModal";
 import TransferModal from "@/components/modals/TransferModal";
-import { FundWalletModal } from "./modals/FundWalletModal";
+import { TradeModal } from "@/components/modals/TradeModal";
 
-export default function HybridPaymentDashboard() {
+export default function PaymentDashboard() {
   const { addToast } = useToast();
   const { data: walletData, isLoading } = useWalletData();
 
   // Modal states
-  const [isFundModalOpen, setIsFundModalOpen] = useState(false);
-  const [showSwapModal, setShowSwapModal] = useState(false);
+  const [showTradeModal, setShowTradeModal] = useState(false);
   const [showManageLiquidityModal, setShowManageLiquidityModal] =
     useState(false);
-  const [showSettlementsModal, setShowSettlementsModal] = useState(false);
+
   const [showGenerateQRModal, setShowGenerateQRModal] = useState(false);
   const [showScanQRModal, setShowScanQRModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
 
-  const initiateSwap = () => {
-    setShowSwapModal(true);
-  };
-
-  const initiateFund = () => {
-    setIsFundModalOpen(true);
-
-  };
-
-  const handleFundSuccess = () => {
-    // Refresh wallet data or show success message
-    setIsFundModalOpen(false);
+  const initiateTrade = () => {
+    setShowTradeModal(true);
   };
 
   const initiateTransfer = () => {
@@ -72,14 +58,10 @@ export default function HybridPaymentDashboard() {
       <div className="space-y-8 animate-fade-in">
         {/* Unified Wallet Card */}
         <UnifiedWalletCard
-          fiatBalances={walletData?.fiatBalances || []}
           cryptoBalances={walletData?.cryptoBalances || []}
           totalValueUSD={walletData?.totalValueUSD || 0}
           totalValueNGN={walletData?.totalValueNGN || 0}
         />
-
-        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-8"> */}
-
 
         {/* Currency Selector & Portfolio Overview */}
         <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700/50 pt-6">
@@ -87,13 +69,9 @@ export default function HybridPaymentDashboard() {
             <CurrencySelector
               totalValueUSD={walletData?.totalValueUSD || 0}
               totalValueNGN={walletData?.totalValueNGN || 0}
-              fiatCurrencies={
-                walletData?.fiatBalances.map((f) => f.currency) || ["NGN"]
-              }
             />
             <ActionButtons
-              onFund={initiateFund}
-              onSwap={initiateSwap}
+              onTrade={initiateTrade}
               onTransfer={initiateTransfer}
               onMore={handleMore}
               showBridge={true}
@@ -132,26 +110,18 @@ export default function HybridPaymentDashboard() {
       </div>
 
         {/* All Modals */}
-      <FundWalletModal
-        isOpen={isFundModalOpen}
-        onClose={() => setIsFundModalOpen(false)}
-        onSuccess={handleFundSuccess}
+      <TradeModal
+        isOpen={showTradeModal}
+        onClose={() => setShowTradeModal(false)}
+        onTransactionComplete={(txHash) => {
+          addToast(`Trade completed: ${txHash.slice(0, 10)}...`, "success");
+        }}
       />
-      <SwapModal
-        isOpen={showSwapModal}
-        onClose={() => setShowSwapModal(false)}
-          onTransactionComplete={(txHash) => {
-            addToast(`swap completed: ${txHash.slice(0, 10)}...`, "success");
-          }}
-        />
         <ManageLiquidityModal
           isOpen={showManageLiquidityModal}
           onClose={() => setShowManageLiquidityModal(false)}
         />
-        <ViewSettlementsModal
-          isOpen={showSettlementsModal}
-          onClose={() => setShowSettlementsModal(false)}
-        />
+
         <GenerateQRModal
           isOpen={showGenerateQRModal}
           onClose={() => setShowGenerateQRModal(false)}

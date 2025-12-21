@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Layout from "@/components/Layout";
-import HybridPaymentDashboard from '@/components/HybridPaymentDashboard';
+import HybridPaymentDashboard from '@/components/PaymentDashboard';
 
 export default function DashboardOverviewPage() {
 

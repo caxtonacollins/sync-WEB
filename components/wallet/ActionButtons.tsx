@@ -13,8 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useWalletVisibility } from "@/contexts/WalletVisibilityContext";
 
 interface ActionButtonsProps {
-  onFund: () => void;
-  onSwap: () => void;
+  onTrade: () => void;
   onTransfer: () => void;
   onMore: () => void;
   showBridge?: boolean;
@@ -28,8 +27,7 @@ interface MoreActionItem {
 }
 
 export function ActionButtons({
-  onFund,
-  onSwap,
+  onTrade,
   onMore,
   onTransfer,
   showBridge = true,
@@ -90,23 +88,14 @@ export function ActionButtons({
   return (
     <div className="space-y-3">
       {/* Primary Action Buttons */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <Button
-          onClick={onFund}
-          className="w-full bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 transition-all duration-200 hover:shadow-lg hover:shadow-green-500/50 transform hover:scale-[1.02]"
-          size="sm"
-        >
-          <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
-          Fund
-        </Button>
-
-        <Button
-          onClick={onSwap}
+          onClick={onTrade}
           className="w-full bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/50 transform hover:scale-[1.02]"
           size="sm"
         >
           <ArrowPathIcon className="h-4 w-4 mr-2" />
-          Swap
+          Trade
         </Button>
 
         <Button

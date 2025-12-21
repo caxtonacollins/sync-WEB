@@ -11,22 +11,36 @@ export const formatTokenAmount = (amount: number | string, decimals: number = 2)
   });
 };
 
-export const formatCurrency = (
-  amount: number,
-  currency: string = "NGN"
-): string => {
-  const symbols: Record<string, string> = {
-    NGN: "₦",
-    USD: "$",
-    EUR: "€",
-    GBP: "£",
-  };
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  NGN: "₦",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  BTC: "₿",
+  ETH: "Ξ"
+  // Add more symbols as needed
+};
 
-  const symbol = symbols[currency] || currency;
-  return `${symbol}${amount.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`;
+export const formatCurrency = (amount: number, currency: string, decimals = 2): string => {
+  const symbol = CURRENCY_SYMBOLS[currency] || currency;
+  
+  // For known fiat currencies, use the browser's currency formatter
+  if (CURRENCY_SYMBOLS[currency] && currency.length === 3) {
+    try {
+      return amount.toLocaleString(undefined, {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
+    } catch (error) {
+      // Fall through to default formatter if currency formatting fails
+    }
+  }
+  
+  // For crypto or unknown currencies, use a simple format
+  const formattedAmount = formatNumber(amount, decimals);
+  return `${symbol} ${formattedAmount}`;
 };
 
 export const formatDate = (date: string | Date): string => {

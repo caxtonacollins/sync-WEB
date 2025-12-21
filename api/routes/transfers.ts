@@ -19,17 +19,3 @@ export const transferToken = async (
     throw error;
   }
 };
-
-export const transferFiat = async (
-  payload: CreateTransferPayload,
-  token: string
-) => {
-  try {
-    const response = await api.post("/transfer/fiat", payload, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};

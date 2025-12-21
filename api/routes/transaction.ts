@@ -23,7 +23,6 @@ interface TransactionResponse {
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;
-  fiatAccountId: string | null;
   cryptoWalletId: string | null;
   swapOrderId: string | null;
 }

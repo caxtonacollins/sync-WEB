@@ -19,7 +19,7 @@ import {
   Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import { TransferProvider, useTransfer } from "@/contexts/TransferContext";
-import TransferModal from "@/components/transfer/TransferModal";
+import TransferModal from "@/delete/transfer/TransferModal";
 import Image from "next/image";
 
 interface UserLayoutProps {
@@ -51,12 +51,6 @@ const userNavigation: NavigationItem[] = [
     href: "/transactions",
     icon: CreditCardIcon,
     description: "View transaction history",
-  },
-  {
-    name: "Swaps",
-    href: "/swaps",
-    icon: ArrowPathIcon,
-    description: "Swap between currencies",
   },
   {
     name: "Settings",

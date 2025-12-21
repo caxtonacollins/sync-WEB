@@ -12,11 +12,7 @@ export default function WalletPage() {
         <div className="space-y-8">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Wallet</h1>
-            <p className="text-gray-400">
-              Manage your fiat and crypto assets in one unified interface
-            </p>
           </div>
-          
           <UnifiedWallet />
         </div>
       </Layout>

@@ -5,12 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { formatCurrency } from "@/lib/utils/formatters";
 import { flutterwaveApi } from '@/api/routes/flutterwave';
 import { useAuth } from '@/contexts/AuthContext';
 import { launchFlutterwave } from '@/lib/flutterwave';
 import { useWalletData } from '@/hooks/useWalletData';
 import { WalletBalance } from '@/types';
+import { Loader2 } from 'lucide-react';
+import { getTokenIcon } from '@/lib/tokenIcons';
 
 declare global {
   interface Window {
@@ -35,14 +37,14 @@ export function FundWalletModal({ isOpen, onClose, onSuccess }: FundWalletModalP
   const { data: walletData, isLoading: isLoadingWallet } = useWalletData();
 
   // Get the first fiat balance for display
-  const primaryFiatBalance = walletData?.fiatBalances?.[0];
+  const primaryFiatBalance = walletData?.cryptoBalances?.[0];
   const displayBalance = primaryFiatBalance?.available || 0;
   const displayCurrency = primaryFiatBalance?.currency || 'NGN';
 
   useEffect(() => {
-    if (isOpen && walletData?.fiatBalances?.length) {
+    if (isOpen && walletData?.cryptoBalances?.length) {
       // Include all accounts, even if accountId is missing (we'll generate a key)
-      const allAccounts = walletData.fiatBalances.map((account, index) => ({
+      const allAccounts = walletData.cryptoBalances.map((account, index) => ({
         ...account,
         // Ensure accountId exists, use a fallback if not
         accountId: account.accountId || `temp-${index}-${account.currency}`
@@ -195,7 +197,20 @@ export function FundWalletModal({ isOpen, onClose, onSuccess }: FundWalletModalP
                   disabled={isLoadingAccounts}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select account to fund" />
+                    <div className="flex items-center gap-2">
+                      {/* {selectedAccount && (
+                        <img 
+                          src={getTokenIcon(selectedAccount.currency)} 
+                          alt={selectedAccount.currency}
+                          className="w-5 h-5 rounded-full"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/images/tokens/default-token.png';
+                          }}
+                        />
+                      )} */}
+                      <SelectValue placeholder="Select account to fund" />
+                    </div>
                   </SelectTrigger>
                   <SelectContent>
                     {accounts.length === 0 ? (
@@ -207,22 +222,28 @@ export function FundWalletModal({ isOpen, onClose, onSuccess }: FundWalletModalP
                         const accountKey = account.accountId || `account-${index}-${account.currency}`;
                         const accountValue = account.accountId || accountKey;
                         const displayText = `${account.currency} Account${account.isDefault ? ' (Default)' : ''}`;
-                        const balanceText = account.available.toLocaleString(undefined, {
-                          style: 'currency',
-                          currency: account.currency,
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        });
+                        const balanceText = formatCurrency(account.available, account.currency);
                         return (
                           <SelectItem 
                             key={accountKey} 
                             value={accountValue}
                           >
-                            <div className="flex flex-col">
-                              <span className="font-medium">{displayText}</span>
-                              <span className="text-xs text-muted-foreground">
-                                Balance: {balanceText}
-                              </span>
+                            <div className="flex items-center gap-2">
+                              <img 
+                                src={getTokenIcon(account.currency)} 
+                                alt={account.currency}
+                                className="w-5 h-5 rounded-full"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = '/images/tokens/default-token.png';
+                                }}
+                              />
+                              <div className="flex flex-col">
+                                <span className="font-medium">{displayText}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  Balance: {balanceText}
+                                </span>
+                              </div>
                             </div>
                           </SelectItem>
                         );
@@ -234,14 +255,20 @@ export function FundWalletModal({ isOpen, onClose, onSuccess }: FundWalletModalP
               {selectedAccount && (
                 <div className="bg-muted/50 p-4 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Current Balance:</span>
+                    <div className="flex items-center gap-2">
+                      <img 
+                        src={getTokenIcon(selectedAccount.currency)} 
+                        alt={selectedAccount.currency}
+                        className="w-5 h-5 rounded-full"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/images/tokens/default-token.png';
+                        }}
+                      />
+                      <span className="text-sm font-medium">Current Balance:</span>
+                    </div>
                     <span className="font-bold">
-                      {selectedAccount.available.toLocaleString(undefined, {
-                        style: 'currency',
-                        currency: selectedAccount.currency,
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                      })}
+                      {formatCurrency(selectedAccount.available, selectedAccount.currency)}
                     </span>
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">

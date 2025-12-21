@@ -37,7 +37,6 @@ export interface WalletBalance {
   accountId: string;
   lockedBalance?: number;
   valueInFiat?: number;
-  fiatCurrency?: string;
   priceChange24h?: number;
   icon?: string;
   network?: string;
@@ -53,3 +52,22 @@ export interface WalletTransactionRequest {
   startDate?: string;
   endDate?: string;
 }
+
+export interface WalletTransaction {
+  id: string;
+  type: "fiat" | "crypto";
+  currency: string;
+  amount: number;
+  status: string;
+  reference: string;
+  createdAt: string;
+  metadata?: {
+    provider?: string;
+    description?: string;
+    paymentMethod?: string;
+    txHash?: string;
+    network?: string;
+    [key: string]: any;
+  };
+}
+

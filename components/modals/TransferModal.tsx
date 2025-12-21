@@ -14,9 +14,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/contexts/ToastContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { transferToken, transferFiat } from "@/api/routes/transfers";
+import { transferToken } from "@/api/routes/transfers";
 import { useWalletBalances } from "@/hooks/use-wallet-balances";
-import { FiatIcon } from "@/lib/fiatIcons";
 import { getTokenIcon } from "@/lib/tokenIcons";
 
 interface TransferModalProps {
@@ -38,13 +37,11 @@ const TransferModal: React.FC<TransferModalProps> = ({
   const [recipientAddress, setRecipientAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [selectedToken, setSelectedToken] = useState("USDC/USD");
-  const [selectedFiat, setSelectedFiat] = useState("USD");
   const [step, setStep] = useState<
     "select" | "confirm" | "processing" | "success"
   >("select");
   const [transactionHash, setTransactionHash] = useState<string>("");
   const [showTokenDropdown, setShowTokenDropdown] = useState(false);
-  const [showFiatDropdown, setShowFiatDropdown] = useState(false);
 
   const { data: walletData, isLoading: isLoadingWallets } = useWalletBalances();
 
@@ -66,17 +63,6 @@ const TransferModal: React.FC<TransferModalProps> = ({
         if (bPriority !== -1) return 1;
         return 0;
       }) || [],
-    [walletData]
-  );
-
-  const availableFiat = useMemo(
-    () =>
-      walletData?.fiatBalances.map((balance) => ({
-        id: balance.currency,
-        name: balance.currency,
-        balance: balance.balance,
-        isActive: true,
-      })) || [],
     [walletData]
   );
 
@@ -109,14 +95,10 @@ const TransferModal: React.FC<TransferModalProps> = ({
         token:
           transferType === "tokenToToken"
             ? selectedToken.split("/")[0]
-            : selectedFiat,
+            : "",
       };
 
-      if (transferType === "tokenToToken") {
-        response = await transferToken(payload, token);
-      } else {
-        response = await transferFiat(payload, token);
-      }
+      response = await transferToken(payload, token);
 
       if (response?.transaction_hash) {
         setTransactionHash(response.transaction_hash);
@@ -156,7 +138,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center">
               <ArrowPathIcon className="h-6 w-6 text-purple-400 mr-2" />
-              <h2 className="text-2xl font-bold text-white">Transfer Funds</h2>
+              <h2 className="text-2xl font-bold text-white">Transfer Tokens</h2>
             </div>
             <button
               onClick={handleClose}
@@ -169,29 +151,6 @@ const TransferModal: React.FC<TransferModalProps> = ({
           {step === "select" && (
             <div className="space-y-6">
                 <>
-                  <div className="mb-4 grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => setTransferType("tokenToToken")}
-                      className={`py-2 rounded-lg border ${
-                        transferType === "tokenToToken"
-                          ? "border-purple-500 text-white"
-                          : "border-gray-700 text-gray-300"
-                      } bg-gray-800`}
-                    >
-                      Token → Token
-                    </button>
-                    <button
-                      onClick={() => setTransferType("fiatToFiat")}
-                      className={`py-2 rounded-lg border ${
-                        transferType === "fiatToFiat"
-                          ? "border-purple-500 text-white"
-                          : "border-gray-700 text-gray-300"
-                      } bg-gray-800`}
-                    >
-                      Fiat → Fiat
-                    </button>
-                  </div>
-
                   <div>
                     <label className="text-sm font-medium text-gray-400 mb-2 block">
                       Recipient Address
@@ -284,48 +243,6 @@ const TransferModal: React.FC<TransferModalProps> = ({
                       </div>
                     </div>
                   )}
-                  {transferType === "fiatToFiat" && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-400 mb-2 block">
-                        Select Fiat Currency
-                      </label>
-                      <div className="relative">
-                        <button
-                          onClick={() => setShowFiatDropdown(!showFiatDropdown)}
-                          className="w-full flex items-center justify-between p-4 bg-gray-800 border-2 border-gray-700 rounded-lg hover:border-purple-500 transition-all"
-                        >
-                          <div className="flex items-center gap-3">
-                            <p className="font-semibold text-white">
-                              {availableFiat.find((f) => f.id === selectedFiat)?.name || "Select Fiat"}
-                            </p>
-                          </div>
-                          <ChevronDownIcon className={`h-5 w-5 text-gray-400 transition-transform ${
-                            showFiatDropdown ? "rotate-180" : ""
-                          }`} />
-                        </button>
-
-                        {showFiatDropdown && (
-                          <div className="absolute z-10 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
-                            {availableFiat.map((f) => (
-                              <button
-                                key={f.id}
-                                onClick={() => {
-                                  setSelectedFiat(f.id);
-                                  setShowFiatDropdown(false);
-                                }}
-                                className="w-full flex items-center justify-between p-3 hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-0"
-                              >
-                                <p className="font-semibold text-white">{f.name}</p>
-                                <Badge className="bg-blue-900 text-blue-400">
-                                  Fiat
-                                </Badge>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </>
 
               <div>
@@ -365,11 +282,11 @@ const TransferModal: React.FC<TransferModalProps> = ({
               <div className="bg-gray-800 p-4 rounded-lg space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-400">Recipient:</span>
-                  <span className="text-white font-semibold">{recipientAddress}</span>
+                  <span className="text-white font-semibold">{`${recipientAddress.slice(0, 6)}...${recipientAddress.slice(-6)}`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400">Amount:</span>
-                  <span className="text-white font-semibold">{amount} {transferType === 'tokenToToken' ? selectedToken.split('/')[0] : selectedFiat}</span>
+                  <span className="text-white font-semibold">{amount} {selectedToken.split('/')[0]}</span>
                 </div>
                 <div className="border-t border-gray-700 pt-3 flex justify-between">
                   <span className="text-gray-400">Total:</span>

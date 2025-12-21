@@ -8,7 +8,6 @@ import { WalletBalance } from "@/types";
 
 export interface UnifiedWalletData {
   userId: string;
-  fiatBalances: WalletBalance[];
   cryptoBalances: WalletBalance[];
   totalValueUSD: number;
   totalValueNGN: number;
@@ -55,19 +54,13 @@ export const useWalletData = () => {
       if (!token) throw new Error('No authentication token found');
       const data = await WalletAPI.getBalance(token);
       
-      if (!data || !data.fiatBalances || !data.cryptoBalances) {
+      if (!data || !data.cryptoBalances) {
         throw new Error("Invalid wallet data received");
       }
       
       // Transform the data to match UnifiedWalletData
       const transformedData: UnifiedWalletData = {
         ...data,
-        fiatBalances: data.fiatBalances.map(balance => ({
-          ...balance,
-          available: parseFloat(balance.balance) || 0,
-          accountNumber: balance.accountId,
-          walletId: balance.accountId,
-        })),
         cryptoBalances: data.cryptoBalances?.map(balance => ({
           ...balance,
           available: parseFloat(balance.balance) || 0,
