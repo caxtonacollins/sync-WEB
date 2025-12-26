@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { getTokenIcon } from '@/lib/tokenIcons';
 
 interface GenerateQRModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ const GenerateQRModal: React.FC<GenerateQRModalProps> = ({ isOpen, onClose }) =>
   const { addToast } = useToast();
   const { user } = useAuth();
   const [amount, setAmount] = useState('');
+  const [symbol, setSymbol] = useState('sNGN');
   const [description, setDescription] = useState('');
   const [qrGenerated, setQrGenerated] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -32,10 +34,10 @@ const GenerateQRModal: React.FC<GenerateQRModalProps> = ({ isOpen, onClose }) =>
     // Create payment request data
     const paymentData = {
       type: 'sync_payment',
-      recipient: user?.id || 'user123',
-      recipientName: `${user?.firstName} ${user?.lastName}` || 'User',
+      recipient: user?.id,
+      recipientName: `${user?.firstName} ${user?.lastName}`,
       amount: parseFloat(amount),
-      currency: 'NGN',
+      symbol: symbol,
       description: description || 'Payment request',
       timestamp: Date.now(),
       network: 'StarkNet'
@@ -61,7 +63,7 @@ const GenerateQRModal: React.FC<GenerateQRModalProps> = ({ isOpen, onClose }) =>
       try {
         await navigator.share({
           title: 'SYNC Payment Request',
-          text: `Pay ${amount} NGN via SYNC`,
+          text: `Pay ${amount} ${symbol} via SYNC`,
           url: `https://sync.app/pay/${qrData}`
         });
       } catch (err) {
@@ -135,10 +137,29 @@ const GenerateQRModal: React.FC<GenerateQRModalProps> = ({ isOpen, onClose }) =>
                 </p>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-400 mb-2 block">
-                  Amount (NGN)
-                </label>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium text-gray-400">
+                    Amount
+                  </label>
+                  <div className="relative w-32">
+                    <select
+                      value={symbol}
+                      onChange={(e) => setSymbol(e.target.value)}
+                      className="block w-full p-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
+                    >
+                      <option value="sNGN">sNGN</option>
+                      <option value="USDC">USDC</option>
+                      <option value="USDT">USDT</option>
+                      <option value="DAI">DAI</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
                 <input
                   type="number"
                   placeholder="0.00"
@@ -192,7 +213,7 @@ const GenerateQRModal: React.FC<GenerateQRModalProps> = ({ isOpen, onClose }) =>
                 <div className="mt-6 w-full bg-gray-800 p-4 rounded-lg">
                   <div className="text-center mb-4">
                     <div className="text-3xl font-bold text-white mb-1">
-                      ₦{parseFloat(amount).toLocaleString()}
+                      {getTokenIcon(symbol)} {parseFloat(amount).toLocaleString()} {symbol}
                     </div>
                     {description && (
                       <p className="text-sm text-gray-400">{description}</p>

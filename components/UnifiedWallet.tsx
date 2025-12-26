@@ -47,9 +47,8 @@ const UnifiedWallet: React.FC = () => {
     refetch: refetchTransactions 
   } = useWalletTransactions();
 
-  // Filter transactions to only show crypto transactions
   const recentTransactions = useMemo(() => {
-    return transactions.filter((tx: WalletTransaction) => tx.type === 'crypto').slice(0, 2);
+    return ((transactions as WalletTransaction[]) || []).filter(tx => tx.type === 'crypto').slice(0, 2);
   }, [transactions]);
 
   const loading = isLoadingWallet || isLoadingTransactions || !walletData || isProvisioning;
@@ -264,8 +263,8 @@ const UnifiedWallet: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <img
-                      src={getTokenIcon(balance.currency)}
-                      alt={balance.currency}
+                      src={getTokenIcon(balance.tokenSymbol)}
+                      alt={balance.tokenSymbol}
                       className="h-8 w-8 rounded-full mr-3"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -274,7 +273,7 @@ const UnifiedWallet: React.FC = () => {
                     />
                     <div>
                       <p className="font-semibold text-white">
-                        {balance.currency}
+                        {balance.tokenSymbol}
                       </p>
                       {balance.isDefault && (
                         <Badge className="mt-1 bg-green-900 text-green-400">
@@ -313,8 +312,8 @@ const UnifiedWallet: React.FC = () => {
                   <div className="p-2 bg-gray-600 rounded-full mr-3">
                    
                       <img
-                        src={getTokenIcon(tx.currency)}
-                        alt={tx.currency}
+                        src={getTokenIcon(tx.tokenSymbol)}
+                        alt={tx.tokenSymbol}
                         className="h-5 w-5 rounded-full"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
@@ -325,7 +324,7 @@ const UnifiedWallet: React.FC = () => {
                   </div>
                   <div>
                     <p className="font-semibold text-white">
-                      {formatCurrency(tx.amount, tx.currency)}
+                      {formatCurrency(tx.amount, tx.tokenSymbol)}
                     </p>
                     <p className="text-sm text-gray-400">{tx.reference}</p>
                   </div>

@@ -4,8 +4,8 @@ import { api } from "@/lib/api-client";
 export interface SwapOrderResponse {
   id: string;
   userId: string;
-  fromCurrency: string;
-  toCurrency: string;
+  from: string;
+  to: string;
   fromAmount: number;
   toAmount: number;
   rate: number;
@@ -28,10 +28,9 @@ export interface SwapOrderListResponse {
 }
 
 export interface CreateSwapOrderPayload {
-  fromCurrency: string;
-  toCurrency: string;
-  fromAmount: number;
-  toAmount: number;
+  from: string;
+  to: string;
+  amount: number;
   rate: number;
   fee?: number;
   status: string;
@@ -59,8 +58,8 @@ export const getUserSwapOrders = async (
   params: {
     userId?: string;
     status?: string;
-    fromCurrency?: string;
-    toCurrency?: string;
+    from?: string;
+    to?: string;
     page?: number;
     limit?: number;
     fromDate?: string;

@@ -8,44 +8,12 @@ import { loginApi, logoutApi, refreshTokenApi } from "@/api/routes/auth";
 import { createCryptoAccountsApi, getDashboardData, getUserById } from "@/api/routes/user";
 import { api } from "@/lib/api-client";
 
-export interface FiatAccount {
-  id: string;
-  userId: string;
-  provider: string;
-  accountNumber: string;
-  accountName: string;
-  name: string;
-  initials: string;
-  balance: number;
-  bankName: string;
-  bankCode: string;
-  currency: string;
-  isDefault: boolean;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  verifiedAt: string | null;
-  contractCode: string;
-  accountReference: string;
-  reservationReference: string;
-  reservedAccountType: string;
-  collectionChannel: string;
-  customerEmail: string;
-  customerName: string;
-  accounts: Array<{
-    bankCode: string;
-    bankName: string;
-    accountName: string;
-    accountNumber: string;
-  }>;
-}
-
 interface CryptoWallet {
   id: string;
   userId: string;
   network: string;
   address: string;
-  currency: string;
+  tokenSymbol: string;
   isDefault: boolean;
   isActive: boolean;
   createdAt: string;
@@ -88,7 +56,6 @@ interface User {
   twoFactorSecret: string | null;
   loginAttempts: number;
   lockedUntil: string | null;
-  fiatAccounts: FiatAccount[];
   cryptoWallets: CryptoWallet[];
   transactions: Transaction[];
   swapOrders: SwapOrder[];
@@ -117,7 +84,6 @@ interface AuthContextType {
     redirectOnFail?: boolean
   ) => Promise<{ success: boolean; accessToken?: string; user?: User }>;
   fetchUserDetails: () => Promise<void>;
-  getFiatAccounts: () => FiatAccount[];
   getCryptoWallets: () => CryptoWallet[];
   getTransactions: () => Transaction[];
   getSwapOrders: () => SwapOrder[];
@@ -421,26 +387,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchCompleteUserData(user.id, token);
   }, [user?.id, token, fetchCompleteUserData]);
 
-  const getFiatAccounts = useCallback(() => {
-    if (!user?.fiatAccounts) {
-      console.warn("[AuthContext] No fiat accounts available");
-      return [];
-    }
-
-    return user.fiatAccounts.map((account) => ({
-      ...account,
-      name: account.accountName,
-      balance: account.balance,
-      bank: account.bankName,
-      initials: account.accountName
-        .split(" ")
-        .slice(0, 2)
-        .map((word) => word[0])
-        .join("")
-        .toUpperCase(),
-    }));
-  }, [user?.fiatAccounts]);
-
   const getCryptoWallets = useCallback(() => {
     return user?.cryptoWallets || [];
   }, [user?.cryptoWallets]);
@@ -469,7 +415,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         fetchUser,
         refreshToken,
         fetchUserDetails,
-        getFiatAccounts,
         getCryptoWallets,
         getTransactions,
         getSwapOrders,

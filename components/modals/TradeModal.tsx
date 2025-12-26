@@ -96,18 +96,15 @@ export function TradeModal({
       if (activeTab === "swap" && swapData) {
         // Execute swap transaction
         const payload = {
-          fromCurrency: swapData.fromToken,
-          toCurrency: swapData.toToken,
-          fromAmount: parseFloat(swapData.amount),
-          toAmount: parseFloat(swapData.estimated),
+          from: swapData.fromToken,
+          to: swapData.toToken,
+          amount: parseFloat(swapData.amount),
+          estimated: parseFloat(swapData.estimated),
           rate: parseFloat(swapData.estimated) / parseFloat(swapData.amount) || 0,
           status: "pending",
           userId: user.id,
           reference: `SWAP_${Date.now()}`,
-          swapType:
-            swapData.direction === "cryptoToStable"
-              ? SwapType.TOKENTOFIAT
-              : SwapType.FIATTOTOKEN,
+          swapType: SwapType.MARKET, // Use MARKET for all swaps (token-to-token, stable-to-token, etc.)
         };
 
         response = await executeSwap(token, payload);

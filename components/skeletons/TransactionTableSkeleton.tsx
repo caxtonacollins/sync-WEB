@@ -25,7 +25,7 @@ export function TransactionTableSkeleton() {
                   "Type",
                   "Status",
                   "Date",
-                  "Currency",
+                  "Symbol",
                 ].map((header) => (
                   <th
                     key={header}

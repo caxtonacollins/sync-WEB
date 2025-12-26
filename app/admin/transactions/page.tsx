@@ -21,7 +21,7 @@ interface Transaction {
   userId: string;
   type: string;
   amount: number;
-  currency: string;
+  tokenSymbol: string;
   status: string;
   createdAt: string;
   description?: string;
@@ -70,7 +70,7 @@ export default function TransactionManagementPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [filterCurrency, setFilterCurrency] = useState<string>("all");
+  const [filterSymbol, setFilterSymbol] = useState<string>("all");
 
   useEffect(() => {
     if (token) {
@@ -100,10 +100,10 @@ export default function TransactionManagementPage() {
 
     const matchesType = filterType === "all" || tx.type === filterType;
     const matchesStatus = filterStatus === "all" || tx.status === filterStatus;
-    const matchesCurrency =
-      filterCurrency === "all" || tx.currency === filterCurrency;
+    const matchesSymbol =
+      filterSymbol === "all" || tx.tokenSymbol === filterSymbol;
 
-    return matchesSearch && matchesType && matchesStatus && matchesCurrency;
+    return matchesSearch && matchesType && matchesStatus && matchesSymbol;
   });
 
   if (loading) {
@@ -194,7 +194,7 @@ export default function TransactionManagementPage() {
                     setSearchTerm("");
                     setFilterType("all");
                     setFilterStatus("all");
-                    setFilterCurrency("all");
+                    setFilterSymbol("all");
                   }}
                   variant="outline"
                   className="border-gray-700 text-gray-300 hover:bg-gray-700"
@@ -270,13 +270,8 @@ export default function TransactionManagementPage() {
                             </Badge>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-semibold text-white">
-                              {tx.currency === "NGN" && "₦"}
-                              {tx.currency === "USD" && "$"}
-                              {tx.amount.toLocaleString()}
-                            </div>
                             <div className="text-xs text-gray-500">
-                              {tx.currency}
+                              {tx.tokenSymbol}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">

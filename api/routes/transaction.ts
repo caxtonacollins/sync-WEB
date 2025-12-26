@@ -15,7 +15,7 @@ interface TransactionResponse {
   type: string;
   status: string;
   amount: number;
-  currency: string;
+  tokenSymbol: string;
   fee: number;
   netAmount: number;
   reference: string;
@@ -42,7 +42,7 @@ export const getAllTransactions = async (
     userId?: string;
     status?: string;
     type?: string;
-    currency?: string;
+    tokenSymbol?: string;
     page?: number;
     limit?: number;
     fromDate?: string;
@@ -62,7 +62,7 @@ export const getAllUserTransactions = async (
     userId?: string;
     status?: string;
     type?: string;
-    currency?: string;
+    tokenSymbol?: string;
     page?: number;
     limit?: number;
     fromDate?: string;

@@ -2,7 +2,7 @@ export interface QRCodeData {
   id: string;
   merchantId: string;
   amount: number;
-  currency: string;
+  symbol: string;
   description: string;
   expiresAt: string; // ISO
   qrCodeData: string;
@@ -24,7 +24,7 @@ export const merchantPaymentSystem = {
   async generatePaymentQR(
     merchantId: string,
     amount: number,
-    currency: string,
+    symbol: string,
     description: string,
     expiresInMinutes = 30
   ): Promise<QRCodeData> {
@@ -35,7 +35,7 @@ export const merchantPaymentSystem = {
       id: randomId("qr"),
       merchantId,
       amount,
-      currency,
+      symbol,
       description,
       expiresAt: expiresAt.toISOString(),
       createdAt: now.toISOString(),
@@ -49,7 +49,7 @@ export const merchantPaymentSystem = {
       id: payload.id,
       merchantId: payload.merchantId,
       amount: payload.amount,
-      currency: payload.currency,
+      symbol: payload.symbol,
       description: payload.description,
       expiresAt: payload.expiresAt,
       qrCodeData,

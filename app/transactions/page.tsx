@@ -22,7 +22,7 @@ export default function TransactionsPage() {
     toDate: undefined as Date | undefined,
     status: "all",
     type: "all",
-    currency: "all",
+    symbol: "all",
     page: 1,
     limit: 10,
   });
@@ -49,7 +49,7 @@ export default function TransactionsPage() {
         userId: user.id,
         status: filters.status !== "all" ? filters.status : undefined,
         type: filters.type !== "all" ? filters.type : undefined,
-        currency: filters.currency !== "all" ? filters.currency : undefined,
+        tokenSymbol: filters.symbol !== "all" ? filters.symbol : undefined,
         page: filters.page,
         limit: filters.limit,
         fromDate: filters.fromDate?.toISOString(),

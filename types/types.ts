@@ -12,7 +12,7 @@ export interface Transaction {
   type: string;
   status: string;
   amount: number;
-  currency: string;
+  symbol: string;
   fee: number;
   netAmount: number;
   reference: string;

@@ -64,7 +64,7 @@ export default function RecentTransactions({ transactions }: RecentTransactionsP
                   >
                     {new Intl.NumberFormat("en-US", {
                       style: "currency",
-                      currency: transaction.currency,
+                      currency: transaction.symbol,
                     }).format(Math.abs(transaction.amount))}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300 capitalize">

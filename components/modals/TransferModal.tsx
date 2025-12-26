@@ -48,14 +48,14 @@ const TransferModal: React.FC<TransferModalProps> = ({
   const availableToken = useMemo(
     () =>
       walletData?.cryptoBalances.map((balance) => ({
-        id: `${balance.currency}/USD`,
-        name: balance.currency,
+        id: `${balance.tokenSymbol}/USD`,
+        name: balance.tokenSymbol,
         balance: balance.balance,
         isActive: true,
       })).sort((a, b) => {
         const priorityOrder = ['USDC', 'ETH'];
-        const aPriority = priorityOrder.indexOf(a.name);
-        const bPriority = priorityOrder.indexOf(b.name);
+        const aPriority = priorityOrder.indexOf(a.name || '');
+        const bPriority = priorityOrder.indexOf(b.name || '');
         if (aPriority !== -1 && bPriority !== -1) {
           return aPriority - bPriority;
         }

@@ -6,7 +6,7 @@ export interface CryptoWallet {
   network: string;
   address: string;
   encryptedPrivateKey: string;
-  currency: string;
+  symbol: string;
   balance: number;
   isDefault: boolean;
   isActive: boolean;
@@ -17,7 +17,7 @@ export interface CryptoWallet {
 
 export interface CreateCryptoWalletRequest {
   network: string;
-  currency: string;
+  symbol: string;
   privateKey?: string; // Optional, will generate if not provided
   isDefault?: boolean;
   metadata?: Record<string, any>;
@@ -33,7 +33,7 @@ export interface CryptoTransactionRequest {
   walletId: string;
   toAddress: string;
   amount: number;
-  currency: string;
+  symbol: string;
   network: string;
   gasPrice?: string;
   gasLimit?: string;
@@ -47,7 +47,7 @@ export interface CryptoTransferRequest {
   sourceWalletId: string;
   destinationAddress: string;
   amount: number;
-  currency: string;
+  symbol: string;
   network: string;
   reference?: string;
   metadata?: Record<string, any>;
@@ -71,7 +71,7 @@ export interface NetworkInfo {
   chainId: number;
   rpcUrl: string;
   blockExplorerUrl: string;
-  nativeCurrency: {
+  nativeToken: {
     name: string;
     symbol: string;
     decimals: number;

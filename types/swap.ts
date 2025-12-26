@@ -1,4 +1,4 @@
-import { Transaction } from './transaction.types';
+import { Transaction } from './transaction';
 
 export interface SwapOrder {
   id: string;
@@ -21,19 +21,18 @@ export interface SwapOrder {
 }
 
 export interface CreateSwapOrderRequest {
-  fromCurrency: string;
-  toCurrency: string;
-  fromAmount?: number;
-  toAmount?: number;
+  from: string;
+  to: string;
+  amount?: number;
   rate?: number;
   provider?: string;
   metadata?: Record<string, any>;
 }
 
 export interface SwapQuote {
-  fromCurrency: string;
-  toCurrency: string;
-  fromAmount: number;
+  from: string;
+  to: string;
+  amount: number;
   toAmount: number;
   rate: number;
   fee: number;
@@ -45,8 +44,8 @@ export interface SwapQuote {
 }
 
 export interface SwapQuoteRequest {
-  fromCurrency: string;
-  toCurrency: string;
+  from: string;
+  to: string;
   amount: number;
   isFromAmount: boolean;
   provider?: string;
@@ -57,8 +56,8 @@ export interface SwapHistoryQueryParams {
   limit?: number;
   status?: string;
   type?: string;
-  fromCurrency?: string;
-  toCurrency?: string;
+  from?: string;
+  to?: string;
   startDate?: string;
   endDate?: string;
   sortBy?: string;
@@ -71,7 +70,7 @@ export interface SwapStats {
   totalFees: number;
   successRate: number;
   byStatus: Record<string, number>;
-  byCurrencyPair: Record<string, number>;
+  bySymbolPair: Record<string, number>;
   dailyVolume: Array<{
     date: string;
     count: number;

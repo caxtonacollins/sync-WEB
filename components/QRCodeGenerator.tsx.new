@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { QrCodeIcon, CameraIcon } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,21 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QRCodeSVG } from "qrcode.react";
 import dynamic from "next/dynamic";
-import merchantPaymentSystem from "@/lib/merchant-payment";
+import merchantPaymentSystem, { QRCodeData as MerchantQRCodeData } from "@/lib/merchant-payment";
+
 const QRScanner = dynamic(() => import("./QRScanner").then((m) => m.default), {
   ssr: false,
 });
 
-interface QRCodeData {
-  id: string;
-  merchantId: string;
-  amount: number;
-  symbol: string;
-  description: string;
-  expiresAt: string;
-  qrCodeData: string;
-  isActive: boolean;
-  createdAt: string;
+// Extend the imported type to maintain compatibility with our component
+interface QRCodeData extends MerchantQRCodeData {
+  // Add any additional fields if needed
 }
 
 interface QRCodeGeneratorProps {
@@ -35,14 +29,15 @@ export default function QRCodeGenerator({
   onQRGenerated,
 }: QRCodeGeneratorProps) {
   const [amount, setAmount] = useState("");
-  const [symbol, setsymbol] = useState("NGN");
+  const [currency, setCurrency] = useState("NGN");
   const [description, setDescription] = useState("");
   const [expiresIn, setExpiresIn] = useState(30);
   const [generatedQR, setGeneratedQR] = useState<QRCodeData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
 
-  const symbolOptions = ["sNGN", "USDc",];
+  const currencyOptions = ["NGN", "USD"];
 
   const handleGenerateQR = async () => {
     if (!amount || !description) {
@@ -57,13 +52,13 @@ export default function QRCodeGenerator({
       const qrData = await merchantPaymentSystem.generatePaymentQR(
         merchantId,
         parseFloat(amount),
-        symbol,
+        currency,
         description,
         expiresIn
       );
 
-      setGeneratedQR(qrData);
-      onQRGenerated?.(qrData);
+      setGeneratedQR(qrData as QRCodeData);
+      onQRGenerated?.(qrData as QRCodeData);
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Failed to generate QR code"
@@ -76,8 +71,6 @@ export default function QRCodeGenerator({
   const handleScanQR = () => {
     setShowScanner(true);
   };
-
-  const [showScanner, setShowScanner] = useState(false);
 
   const copyQRData = () => {
     if (generatedQR) {
@@ -97,6 +90,37 @@ export default function QRCodeGenerator({
 
     const diffHours = Math.floor(diffMins / 60);
     return `${diffHours} hours`;
+  };
+
+  const handleScanComplete = (result: { parsed?: any; raw: string }) => {
+    setShowScanner(false);
+    try {
+      if (result.parsed) {
+        const data = result.parsed;
+        const qrData: QRCodeData = {
+          ...data,
+          id: data.id || "scanned",
+          merchantId: data.merchantId || "",
+          amount: data.amount || 0,
+          currency: data.currency || "NGN",
+          description: data.description || "",
+          expiresAt: data.expiresAt || new Date().toISOString(),
+          qrCodeData: result.raw,
+          isActive: data.isActive !== false,
+          createdAt: data.createdAt || new Date().toISOString(),
+        };
+        setGeneratedQR(qrData);
+        onQRGenerated?.(qrData);
+        alert(
+          `Scanned QR for ${qrData.amount} ${qrData.currency} — merchant ${qrData.merchantId}`
+        );
+      } else {
+        alert(`Scanned: ${result.raw}`);
+      }
+    } catch (e) {
+      console.error("Error processing QR code:", e);
+      setError("Failed to process QR code");
+    }
   };
 
   return (
@@ -125,16 +149,16 @@ export default function QRCodeGenerator({
               />
             </div>
             <div>
-              <Label htmlFor="symbol" className="text-gray-300">
-                symbol
+              <Label htmlFor="currency" className="text-gray-300">
+                Currency
               </Label>
               <select
-                id="symbol"
-                value={symbol}
-                onChange={(e) => setsymbol(e.target.value)}
+                id="currency"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
                 className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
               >
-                {symbolOptions.map((option) => (
+                {currencyOptions.map((option) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -165,7 +189,7 @@ export default function QRCodeGenerator({
               id="expiresIn"
               type="number"
               value={expiresIn}
-              onChange={(e) => setExpiresIn(parseInt(e.target.value))}
+              onChange={(e) => setExpiresIn(parseInt(e.target.value) || 30)}
               min="1"
               max="1440"
               className="bg-gray-700 border-gray-600 text-white"
@@ -193,21 +217,13 @@ export default function QRCodeGenerator({
             <div className="bg-white p-4 rounded-lg flex justify-center">
               <div className="text-center">
                 <div className="w-48 h-48 bg-gray-200 rounded-lg flex items-center justify-center mb-4">
-                  {/* render the actual QR code */}
-                  {generatedQR ? (
-                    <QRCodeSVG
-                      value={generatedQR.qrCodeData}
-                      size={180}
-                      bgColor="#ffffff"
-                      fgColor="#111827"
-                    />
-                  ) : (
-                    <QrCodeIcon className="h-24 w-24 text-gray-400" />
-                  )}
+                  <QRCodeSVG
+                    value={generatedQR.qrCodeData}
+                    size={180}
+                    bgColor="#ffffff"
+                    fgColor="#111827"
+                  />
                 </div>
-                <p className="text-sm text-gray-600">
-                  QR Code would be displayed here
-                </p>
               </div>
             </div>
 
@@ -215,12 +231,12 @@ export default function QRCodeGenerator({
               <div className="flex justify-between">
                 <span className="text-gray-400">Amount:</span>
                 <span className="text-white font-semibold">
-                  {amount} {symbol}
+                  {generatedQR.amount} {generatedQR.currency}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Description:</span>
-                <span className="text-white">{description}</span>
+                <span className="text-white">{generatedQR.description}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Status:</span>
@@ -263,7 +279,6 @@ export default function QRCodeGenerator({
         </Card>
       )}
 
-      {/* Scanner modal / drawer */}
       {showScanner && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-2xl bg-gray-900 rounded p-6">
@@ -274,35 +289,7 @@ export default function QRCodeGenerator({
               </Button>
             </div>
             <QRScanner
-              onDetected={(result) => {
-                setShowScanner(false);
-                try {
-                  if (result.parsed) {
-                    // If we get parsed payload, we can show it or navigate to a payment confirm flow
-                    const data = result.parsed as any;
-                    const qrData: QRCodeData = {
-                      id: data.id ?? "scanned",
-                      merchantId: data.merchantId ?? "",
-                      amount: data.amount ?? 0,
-                      symbol: data.symbol ?? "NGN",
-                      description: data.description ?? "",
-                      expiresAt: data.expiresAt ?? new Date().toISOString(),
-                      qrCodeData: result.raw,
-                      isActive: true,
-                      createdAt: data.createdAt ?? new Date().toISOString(),
-                    };
-                    // hand off to parent if needed
-                    onQRGenerated?.(qrData);
-                    alert(
-                      `Scanned QR for ${qrData.amount} ${qrData.symbol} — merchant ${qrData.merchantId}`
-                    );
-                  } else {
-                    alert(`Scanned: ${result.raw}`);
-                  }
-                } catch (e) {
-                  console.error(e);
-                }
-              }}
+              onDetected={handleScanComplete}
               onClose={() => setShowScanner(false)}
             />
           </div>

@@ -20,7 +20,7 @@ export interface Transaction {
   type: string;
   status: string;
   amount: number;
-  currency: string;
+  symbol: string;
   fee: number;
   netAmount: number;
   reference: string;
@@ -40,7 +40,7 @@ export interface TransactionQueryParams {
   limit?: number;
   type?: string;
   status?: string;
-  currency?: string;
+  symbol?: string;
   startDate?: string;
   endDate?: string;
   sortBy?: string;

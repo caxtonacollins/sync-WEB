@@ -58,33 +58,25 @@ export function TradeSwapModal({ onContinue }: TradeSwapModalProps) {
   const availableTokens = useMemo(() => {
     const tokens: Array<{ id: string; name: string; symbol: string; balance: number; type: "crypto" | "stable"; address?: string }> = [];
     
-    // Add crypto tokens
+    // Add crypto tokens (including stable tokens like sNGN which are on-chain)
     walletData?.cryptoBalances.forEach((balance) => {
+      const symbol = (balance as any).tokenSymbol || (balance as any).currency;
+      if (!symbol) return;
+      
+      const isStable = symbol === "sNGN" || symbol === "SNGN" || symbol === "USDC";
+      
       tokens.push({
-        id: balance.currency,
-        name: balance.currency,
-        symbol: balance.currency,
-        balance: Number(balance.balance),
-        type: "crypto",
-        address: balance.walletId, // Using walletId as address placeholder
+        id: symbol,
+        name: isStable 
+          ? (symbol === "sNGN" || symbol === "SNGN" 
+              ? STABLE_COINS["NGN"]?.name || "Stable NGN"
+              : "USD Coin")
+          : symbol,
+        symbol: symbol,
+        balance: Number((balance as any).balance || 0),
+        type: isStable ? "stable" : "crypto",
+        address: (balance as any).address || (balance as any).walletId,
       });
-    });
-
-    // Add stable coins (check if user has balances)
-    Object.values(STABLE_COINS).forEach((stable) => {
-      const fiatBalance = walletData?.fiatBalances.find(
-        (b) => b.currency === stable.fiatCode
-      );
-      if (fiatBalance) {
-        tokens.push({
-          id: stable.symbol,
-          name: stable.name,
-          symbol: stable.symbol,
-          balance: Number(fiatBalance.balance || "0"),
-          type: "stable",
-          address: fiatBalance.accountId, // Using accountId as address placeholder
-        });
-      }
     });
 
     return tokens.sort((a, b) => {
@@ -114,15 +106,24 @@ export function TradeSwapModal({ onContinue }: TradeSwapModalProps) {
     return ratesObj;
   }, [exchangeRates]);
 
-  // Determine swap direction
+  // Determine swap direction (for display purposes, all swaps are token-to-token now)
   const direction = useMemo(() => {
     if (!fromToken || !toToken) return null;
     const fromTokenData = availableTokens.find((t) => t.id === fromToken);
     const toTokenData = availableTokens.find((t) => t.id === toToken);
     if (!fromTokenData || !toTokenData) return null;
-    return fromTokenData.type === "crypto" && toTokenData.type === "stable"
-      ? "cryptoToStable"
-      : "stableToCrypto";
+    
+    // All swaps are now token-to-token (including stable tokens)
+    // Return a generic direction for UI purposes
+    if (fromTokenData.type === "crypto" && toTokenData.type === "stable") {
+      return "cryptoToStable";
+    } else if (fromTokenData.type === "stable" && toTokenData.type === "crypto") {
+      return "stableToCrypto";
+    } else if (fromTokenData.type === "stable" && toTokenData.type === "stable") {
+      return "stableToStable";
+    } else {
+      return "cryptoToCrypto";
+    }
   }, [fromToken, toToken, availableTokens]);
 
   // Calculate estimated output
@@ -135,27 +136,39 @@ export function TradeSwapModal({ onContinue }: TradeSwapModalProps) {
 
     if (!fromTokenData || !toTokenData) return "0";
 
-    if (direction === "cryptoToStable") {
-      // Crypto -> Stable: Get crypto price in USD, convert to stable coin
-      const cryptoPrice = rates[fromTokenData.symbol] || 1;
-      const usdValue = amt * cryptoPrice;
-      
-      // If stable is sNGN, convert USD to NGN
-      if (toTokenData.symbol === "sNGN") {
-        const ngnRate = rates.USD_NGN || 1600; // Fallback rate
-        return (usdValue * ngnRate).toFixed(6);
-      }
-      return usdValue.toFixed(6);
+    // Convert from token to USD first
+    let usdValue = 0;
+    
+    if (fromTokenData.symbol === "sNGN" || fromTokenData.symbol === "SNGN") {
+      // sNGN to USD: 1 sNGN = 1 NGN, convert NGN to USD
+      const ngnRate = rates.USD_NGN || 1600; // Fallback rate
+      usdValue = amt / ngnRate;
+    } else if (fromTokenData.symbol === "USDC") {
+      // USDC is 1:1 with USD
+      usdValue = amt;
     } else {
-      // Stable -> Crypto: Convert stable to USD, then to crypto
-      let usdValue = amt;
-      if (fromTokenData.symbol === "sNGN") {
-        const ngnRate = rates.USD_NGN || 1600;
-        usdValue = amt / ngnRate;
-      }
-      const cryptoPrice = rates[toTokenData.symbol] || 1;
-      return (usdValue / cryptoPrice).toFixed(6);
+      // Crypto token: use exchange rate
+      const cryptoPrice = rates[fromTokenData.symbol] || 1;
+      usdValue = amt * cryptoPrice;
     }
+
+    // Convert USD to target token
+    let result = 0;
+    
+    if (toTokenData.symbol === "sNGN" || toTokenData.symbol === "SNGN") {
+      // USD to sNGN: convert USD to NGN (1 NGN = 1 sNGN)
+      const ngnRate = rates.USD_NGN || 1600;
+      result = usdValue * ngnRate;
+    } else if (toTokenData.symbol === "USDC") {
+      // USD to USDC: 1:1
+      result = usdValue;
+    } else {
+      // USD to crypto token: use exchange rate
+      const cryptoPrice = rates[toTokenData.symbol] || 1;
+      result = usdValue / cryptoPrice;
+    }
+
+    return result.toFixed(6);
   }, [amount, fromToken, toToken, direction, rates, availableTokens]);
 
   // Calculate USD values

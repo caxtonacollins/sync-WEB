@@ -2,7 +2,7 @@ import { api } from "@/lib/api-client";
 
 export interface InitializePaymentParams {
   amount: number;
-  currency?: string;
+  tokenSymbol?: string;
   paymentMethod?: string;
 }
 
@@ -14,7 +14,7 @@ export interface InitializePaymentResponse {
     publicKey: string;
     txRef: string;
     amount: number;
-    currency: string;
+    tokenSymbol: string;
     customer: {
       email: string;
       name: string;

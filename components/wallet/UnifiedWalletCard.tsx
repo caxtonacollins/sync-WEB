@@ -13,25 +13,7 @@ import { formatCurrency, formatAddress } from "@/lib/utils/formatters";
 import { useWalletVisibility } from "@/contexts/WalletVisibilityContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface WalletBalance {
-  currency: string;
-  available: number;
-  accountId?: string;
-  accountNumber?: string;
-  bankName?: string;
-  walletId?: string;
-  provider?: string;
-  network?: string;
-  address?: string;
-  isDefault: boolean;
-}
-
-interface UnifiedWalletCardProps {
-  cryptoBalances: WalletBalance[];
-  totalValueUSD?: number;
-  totalValueNGN?: number;
-}
+import { WalletBalance, UnifiedWalletCardProps } from "@/types/wallet";
 
 export function UnifiedWalletCard({
   cryptoBalances = [],
@@ -96,8 +78,8 @@ export function UnifiedWalletCard({
               <div className="flex items-center gap-2">
                 <div className="flex-shrink-0">
                   <img
-                    src={getTokenIcon(selectedCrypto?.currency || '')}
-                    alt={selectedCrypto?.currency || 'Crypto'}
+                    src={getTokenIcon(selectedCrypto?.tokenSymbol || '')}
+                    alt={selectedCrypto?.tokenSymbol || 'Crypto'}
                     className="h-8 w-8 rounded-full"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -124,8 +106,8 @@ export function UnifiedWalletCard({
               >
                 <div className="text-left flex items-center gap-2 flex-1 ">
                   <img
-                    src={getTokenIcon(selectedCrypto?.currency || '')}
-                    alt={selectedCrypto?.currency || 'Crypto'}
+                    src={getTokenIcon(selectedCrypto?.tokenSymbol || '')}
+                    alt={selectedCrypto?.tokenSymbol || 'Crypto'}
                     className="h-8 w-8 rounded-full"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -135,8 +117,8 @@ export function UnifiedWalletCard({
                   <div className="flex items-center gap-2">
                     <div className="font-semibold text-white">
                       {showBalance && selectedCrypto
-                        ? `${selectedCrypto.currency} ${selectedCrypto?.available}`
-                        : `${selectedCrypto?.currency || "N/A"} ••••••`}
+                        ? `${selectedCrypto.tokenSymbol} ${selectedCrypto?.available}`
+                        : `${selectedCrypto?.tokenSymbol || "N/A"} ••••••`}
                     </div>
                   </div>
                 </div>
@@ -149,7 +131,7 @@ export function UnifiedWalletCard({
               {/* Crypto Dropdown Menu */}
               {showCryptoDropdown && cryptoBalances.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                  {cryptoBalances.map((crypto, idx) => (
+                  {cryptoBalances.map((crypto: WalletBalance, idx: number) => (
                     <button
                       key={idx}
                       onClick={() => {
@@ -162,8 +144,8 @@ export function UnifiedWalletCard({
                         <div>
                           <div className="flex items-center gap-2">
                             <img
-                              src={getTokenIcon(crypto.currency)}
-                              alt={crypto.currency}
+                              src={getTokenIcon(crypto.tokenSymbol)}
+                              alt={crypto.tokenSymbol}
                               className="h-5 w-5 rounded-full"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
@@ -172,7 +154,7 @@ export function UnifiedWalletCard({
                             />
                             <div>
                               <div className="font-semibold text-white">
-                                {crypto.currency} {crypto.available}
+                                {crypto.tokenSymbol} {crypto.available}
                               </div>
                             </div>
                           </div>

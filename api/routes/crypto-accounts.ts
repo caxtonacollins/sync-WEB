@@ -5,22 +5,15 @@ export interface FiatAccount {
   name: string;
   accountNumber: string;
   balance: string;
-  currency: string;
+  tokenSymbol: string;
   initials: string;
   isDefault: boolean;
 }
 
 interface UnifiedWalletBalance {
   userId: string;
-  fiatBalances: {
-    currency: string;
-    balance: string;
-    accountId: string;
-    provider: string;
-    isDefault: boolean;
-  }[];
   cryptoBalances: {
-    currency: string;
+    tokenSymbol?: string;
     balance: string;
     walletId: string;
     network: string;

@@ -35,7 +35,7 @@ interface TransactionTableProps {
     toDate?: Date;
     status: string;
     type: string;
-    currency: string;
+    symbol: string;
     page: number;
     limit: number;
   };
@@ -170,18 +170,18 @@ export function TransactionTable({
         <div className="flex flex-col space-y-2">
           <label className="text-sm text-gray-400">Currency</label>
           <Select
-            value={filters.currency}
+            value={filters.symbol}
             onValueChange={(value) =>
-              onFilterChange({ ...filters, currency: value })
+              onFilterChange({ ...filters, symbol: value })
             }
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select currency" />
+              <SelectValue placeholder="Select symbol" />
             </SelectTrigger>
             <SelectContent>
-              {CURRENCIES.map((currency) => (
-                <SelectItem key={currency} value={currency}>
-                  {currency}
+              {CURRENCIES.map((symbol) => (
+                <SelectItem key={symbol} value={symbol}>
+                  {symbol}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -211,7 +211,7 @@ export function TransactionTable({
                   Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Currency
+                  symbol
                 </th>
               </tr>
             </thead>
@@ -265,7 +265,7 @@ export function TransactionTable({
                       {new Date(transaction.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-300 font-semibold">
-                      {transaction.currency}
+                      {transaction.symbol}
                     </td>
                   </tr>
                 ))

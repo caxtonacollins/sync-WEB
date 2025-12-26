@@ -1,8 +1,6 @@
-import { FiatAccount } from './fiat';
 import { CryptoWallet } from './crypto';
 
 export interface WalletSummary {
-  fiatBalanceNGN: number;
   cryptoValueUSD: number;
   syncTokenBalance: number;
   stakedSyncTokens: number;
@@ -13,9 +11,7 @@ export interface WalletSummary {
 }
 
 export interface WalletStats {
-  totalFiatWallets: number;
   totalCryptoWallets: number;
-  totalFiatBalance: number;
   totalCryptoBalance: number;
   activeWallets: number;
   suspendedWallets: number;
@@ -24,22 +20,29 @@ export interface WalletStats {
 }
 
 export interface WalletOverview {
-  fiatAccounts: FiatAccount[];
   cryptoWallets: CryptoWallet[];
   summary: WalletSummary;
   stats: WalletStats;
 }
 
 export interface WalletBalance {
-  currency: string;
+  tokenSymbol: string;
   available: number;
-  isDefault: boolean;
-  accountId: string;
-  lockedBalance?: number;
-  valueInFiat?: number;
-  priceChange24h?: number;
-  icon?: string;
+  accountId?: string;
+  accountNumber?: string;
+  bankName?: string;
+  walletId?: string;
+  provider?: string;
   network?: string;
+  priceChange24h?: number;
+  address?: string;
+  isDefault: boolean;
+}
+
+export interface UnifiedWalletCardProps {
+  cryptoBalances: WalletBalance[];
+  totalValueUSD?: number;
+  totalValueNGN?: number;
 }
 
 export interface WalletTransactionRequest {
@@ -56,7 +59,7 @@ export interface WalletTransactionRequest {
 export interface WalletTransaction {
   id: string;
   type: "fiat" | "crypto";
-  currency: string;
+  tokenSymbol: string;
   amount: number;
   status: string;
   reference: string;

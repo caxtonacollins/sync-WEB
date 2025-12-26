@@ -1,9 +1,9 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { getAllUserTransactions } from "@/api/routes/transaction";
 import { getWalletSummary } from "@/api/routes/wallet";
-import WalletAPI from "@/api/routes/fiat-accounts";
+import WalletAPI from "@/api/routes/crypto-accounts";
 import { WalletBalance } from "@/types";
 
 export interface UnifiedWalletData {
@@ -16,7 +16,7 @@ export interface UnifiedWalletData {
 export interface WalletTransaction {
   id: string;
   type: "fiat" | "crypto";
-  currency: string;
+  tokenSymbol: string;
   amount: number;
   status: string;
   reference: string;
@@ -57,8 +57,7 @@ export const useWalletData = () => {
       if (!data || !data.cryptoBalances) {
         throw new Error("Invalid wallet data received");
       }
-      
-      // Transform the data to match UnifiedWalletData
+
       const transformedData: UnifiedWalletData = {
         ...data,
         cryptoBalances: data.cryptoBalances?.map(balance => ({
@@ -66,6 +65,7 @@ export const useWalletData = () => {
           available: parseFloat(balance.balance) || 0,
           accountId: balance.walletId,
           accountNumber: balance.address,
+          tokenSymbol: balance.tokenSymbol || 'sNGN',
         })) || [],
         totalValueUSD: parseFloat(data.totalValueUSD as any) || 0,
         totalValueNGN: parseFloat((data as any).totalValueNGN || '0') || 0
@@ -97,13 +97,17 @@ export const useWalletTransactions = (userId?: string) => {
         
         return response.data.map(tx => ({
           id: tx.id,
-          type: tx.type as 'fiat' | 'crypto',
-          currency: tx.currency,
+          type: (tx.type === 'fiat' || tx.type === 'crypto' ? tx.type : 'crypto') as 'fiat' | 'crypto',
+          tokenSymbol: tx.tokenSymbol || 'N/A',
           amount: tx.amount,
           status: tx.status,
           reference: tx.reference,
           createdAt: tx.createdAt,
-          metadata: tx.metadata,
+          metadata: {
+            ...tx.metadata,
+            type: tx.type,
+            tokenSymbol: tx.tokenSymbol,
+          },
         }));
       } catch (error) {
         console.error('Failed to fetch transactions:', error);
