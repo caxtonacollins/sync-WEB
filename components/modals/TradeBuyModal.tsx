@@ -11,16 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/contexts/ToastContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { FiatIcon } from "@/lib/fiatIcons";
-import { getTokenIcon } from "@/lib/tokenIcons";
 
 // Supported countries and their stable coins
 const SUPPORTED_COUNTRIES = [
   { code: "NGN", name: "Nigeria", stableCoin: "sNGN", stableCoinName: "Stable NGN" },
   { code: "USD", name: "United States", stableCoin: "USDC", stableCoinName: "USD Coin" },
-  // Add more countries as needed
 ];
 
-interface PaymentMethod {
+export interface PaymentMethod {
   id: string;
   type: "bank" | "card";
   name: string;
@@ -39,11 +37,10 @@ interface TradeBuyModalProps {
 
 export function TradeBuyModal({ onContinue }: TradeBuyModalProps) {
   const { addToast } = useToast();
-  const { user } = useAuth();
-  const [selectedCountry, setSelectedCountry] = useState<string>("NGN");
   const [amount, setAmount] = useState("");
-  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
+  const [selectedCountry, setSelectedCountry] = useState<string>("NGN");
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
 
   const selectedCountryData = SUPPORTED_COUNTRIES.find(
     (c) => c.code === selectedCountry
@@ -231,10 +228,6 @@ export function TradeBuyModal({ onContinue }: TradeBuyModalProps) {
           <div className="flex justify-between text-sm">
             <span className="text-gray-400">Processing Fee:</span>
             <span className="text-white">~2.5%</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Network:</span>
-            <Badge className="bg-purple-900 text-purple-400">Starknet</Badge>
           </div>
         </div>
       )}

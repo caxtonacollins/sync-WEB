@@ -19,7 +19,7 @@ import {
   Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import { TransferProvider, useTransfer } from "@/contexts/TransferContext";
-import TransferModal from "@/delete/transfer/TransferModal";
+import TransferModal from "@/components/modals/TransferModal";
 import Image from "next/image";
 
 interface UserLayoutProps {
@@ -62,7 +62,6 @@ const userNavigation: NavigationItem[] = [
 
 const AppLayout = ({ children }: UserLayoutProps) => {
   const { user, logout } = useAuth();
-  const { isTransferModalOpen, closeTransferModal } = useTransfer();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -87,8 +86,6 @@ const AppLayout = ({ children }: UserLayoutProps) => {
 
   return (
     <div className="min-h-screen bg-gray-950">
-      <TransferModal isOpen={isTransferModalOpen} onClose={closeTransferModal} />
-
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div

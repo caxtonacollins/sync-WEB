@@ -92,10 +92,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
       const payload = {
         toAddress: recipientAddress,
         amount: parseFloat(amount),
-        token:
-          transferType === "tokenToToken"
-            ? selectedToken.split("/")[0]
-            : "",
+        tokenSymbol: selectedToken.split("/")[0]
       };
 
       response = await transferToken(payload, token);

@@ -10,21 +10,20 @@ import { UnifiedWalletCard } from "@/components/wallet/UnifiedWalletCard";
 import { ActionButtons } from "@/components/wallet/ActionButtons";
 import { CurrencySelector } from "@/components/wallet/CurrencySelector";
 import { WalletVisibilityProvider } from "@/contexts/WalletVisibilityContext";
-import ManageLiquidityModal from "@/delete/ManageLiquidityModal";
 import GenerateQRModal from "@/components/modals/GenerateQRModal";
 import ScanQRModal from "@/components/modals/ScanQRModal";
 import TransferModal from "@/components/modals/TransferModal";
 import { TradeModal } from "@/components/modals/TradeModal";
+import { verifyBuy } from "@/api/routes/buy";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function PaymentDashboard() {
   const { addToast } = useToast();
   const { data: walletData, isLoading } = useWalletData();
+  const { token } = useAuth();
 
   // Modal states
   const [showTradeModal, setShowTradeModal] = useState(false);
-  const [showManageLiquidityModal, setShowManageLiquidityModal] =
-    useState(false);
-
   const [showGenerateQRModal, setShowGenerateQRModal] = useState(false);
   const [showScanQRModal, setShowScanQRModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
@@ -39,6 +38,26 @@ export default function PaymentDashboard() {
 
   const handleMore = () => {
   };
+
+  const handleTransactionComplete = async (paymentResponse: any) => {
+    try {
+      const txId = paymentResponse.transaction_id;
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+      const verifyResponse = await verifyBuy({ transactionId: txId, amount: paymentResponse.amount, tokenSymbol: paymentResponse.currency }, token)
+
+      if (!verifyResponse.success) {
+        throw new Error(verifyResponse.message || 'Transaction verification failed');
+      }
+
+      addToast(`Payment successful! Your ${paymentResponse.currency} will be credited shortly.`, 'success');
+      addToast(`Transaction ID: ${txId.slice(0, 10)}...`, 'info');
+    } catch (error) {
+      console.error('Transaction completion error:', error);
+      addToast('Transaction completion failed', 'error');
+    }
+  }
 
   if (isLoading) {
     return (
@@ -60,7 +79,6 @@ export default function PaymentDashboard() {
         <UnifiedWalletCard
           cryptoBalances={walletData?.cryptoBalances || []}
           totalValueUSD={walletData?.totalValueUSD || 0}
-          totalValueNGN={walletData?.totalValueNGN || 0}
         />
 
         {/* Currency Selector & Portfolio Overview */}
@@ -68,7 +86,6 @@ export default function PaymentDashboard() {
           <CardContent className="space-y-6">
             <CurrencySelector
               totalValueUSD={walletData?.totalValueUSD || 0}
-              totalValueNGN={walletData?.totalValueNGN || 0}
             />
             <ActionButtons
               onTrade={initiateTrade}
@@ -109,27 +126,22 @@ export default function PaymentDashboard() {
         </Card>
       </div>
 
-        {/* All Modals */}
+      {/* All Modals */}
       <TradeModal
         isOpen={showTradeModal}
         onClose={() => setShowTradeModal(false)}
-        onTransactionComplete={(txHash) => {
-          addToast(`Trade completed: ${txHash.slice(0, 10)}...`, "success");
+        onTransactionComplete={async (txHash) => {
+          handleTransactionComplete(txHash);
         }}
       />
-        <ManageLiquidityModal
-          isOpen={showManageLiquidityModal}
-          onClose={() => setShowManageLiquidityModal(false)}
-        />
-
-        <GenerateQRModal
-          isOpen={showGenerateQRModal}
-          onClose={() => setShowGenerateQRModal(false)}
-        />
-        <ScanQRModal
-          isOpen={showScanQRModal}
-          onClose={() => setShowScanQRModal(false)}
-        />
+      <GenerateQRModal
+        isOpen={showGenerateQRModal}
+        onClose={() => setShowGenerateQRModal(false)}
+      />
+      <ScanQRModal
+        isOpen={showScanQRModal}
+        onClose={() => setShowScanQRModal(false)}
+      />
       <TransferModal
         isOpen={showTransferModal}
         onClose={() => setShowTransferModal(false)}

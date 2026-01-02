@@ -16,9 +16,18 @@ import { getTokenIcon } from "@/lib/tokenIcons";
 
 // Supported countries and their stable coins
 const SUPPORTED_COUNTRIES = [
-  { code: "NGN", name: "Nigeria", stableCoin: "sNGN", stableCoinName: "Stable NGN" },
-  { code: "USD", name: "United States", stableCoin: "USDC", stableCoinName: "USD Coin" },
-  // Add more countries as needed
+  {
+    code: "NGN",
+    name: "Nigeria",
+    stableCoin: "sNGN",
+    stableCoinName: "Stable NGN",
+  },
+  {
+    code: "USD",
+    name: "United States",
+    stableCoin: "USDC",
+    stableCoinName: "USD Coin",
+  },
 ];
 
 interface BankAccount {
@@ -26,6 +35,7 @@ interface BankAccount {
   accountName: string;
   accountNumber: string;
   bankName: string;
+  bankCode: string;
   currency: string;
 }
 
@@ -34,13 +44,12 @@ interface TradeSellModalProps {
     country: string;
     stableCoin: string;
     amount: string;
-    bankAccount: string;
+    bankAccount: BankAccount | null;
   }) => void;
 }
 
 export function TradeSellModal({ onContinue }: TradeSellModalProps) {
   const { addToast } = useToast();
-  const { user } = useAuth();
   const { data: walletData } = useWalletBalances();
   const [selectedCountry, setSelectedCountry] = useState<string>("NGN");
   const [amount, setAmount] = useState("");
@@ -54,24 +63,27 @@ export function TradeSellModal({ onContinue }: TradeSellModalProps) {
 
   // Get user's stable coin balance
   const stableCoinBalance = useMemo(() => {
-    if (!selectedCountryData) return 0;
-    const fiatBalance = walletData?.fiatBalances.find(
-      (b) => b.currency === selectedCountryData.code
+    return (
+      walletData?.cryptoBalances.find(
+        (b) => b.tokenSymbol === selectedCountryData?.stableCoin
+      )?.balance || 0
     );
-    return fiatBalance ? parseFloat(fiatBalance.balance || "0") : 0;
   }, [selectedCountry, walletData, selectedCountryData]);
 
   // Get user's bank accounts (would typically come from API)
-  const bankAccounts: BankAccount[] = useMemo(() => [
-    {
-      id: "bank-1",
-      accountName: "John Doe",
-      accountNumber: "1234567890",
-      bankName: "Access Bank",
-      currency: "NGN",
-    },
-    // Add more bank accounts as needed
-  ], []);
+  const bankAccounts: BankAccount[] = useMemo(
+    () => [
+      {
+        id: "bank-1",
+        accountName: "John Doe",
+        accountNumber: "0690000031",
+        bankName: "Access Bank",
+        bankCode: "044",
+        currency: "NGN",
+      },
+    ],
+    []
+  );
 
   // Filter bank accounts by selected country
   const availableBankAccounts = useMemo(() => {
@@ -95,7 +107,7 @@ export function TradeSellModal({ onContinue }: TradeSellModalProps) {
       addToast("Please enter a valid amount", "error");
       return;
     }
-    if (parseFloat(amount) > stableCoinBalance) {
+    if (parseFloat(amount) > parseFloat(stableCoinBalance.toString())) {
       addToast("Insufficient balance", "error");
       return;
     }
@@ -108,7 +120,7 @@ export function TradeSellModal({ onContinue }: TradeSellModalProps) {
       country: selectedCountry,
       stableCoin: selectedCountryData?.stableCoin || "",
       amount,
-      bankAccount: selectedBankAccount,
+      bankAccount: selectedBankAccountData || null,
     });
   };
 
@@ -193,7 +205,8 @@ export function TradeSellModal({ onContinue }: TradeSellModalProps) {
               <span className="text-sm text-gray-400">Available Balance:</span>
             </div>
             <span className="font-bold text-white">
-              {stableCoinBalance.toFixed(2)} {selectedCountryData.stableCoin}
+              {Number(stableCoinBalance).toFixed(2)}{" "}
+              {selectedCountryData.stableCoin}{" "}
             </span>
           </div>
         </div>
@@ -225,7 +238,8 @@ export function TradeSellModal({ onContinue }: TradeSellModalProps) {
               You'll receive: {fiatAmount || "0.00"} {selectedCountryData?.code}
             </span>
             <span className="text-purple-400">
-              1 {selectedCountryData?.stableCoin} = 1 {selectedCountryData?.code}
+              1 {selectedCountryData?.stableCoin} = 1{" "}
+              {selectedCountryData?.code}
             </span>
           </div>
         </div>
@@ -250,7 +264,8 @@ export function TradeSellModal({ onContinue }: TradeSellModalProps) {
                       {selectedBankAccountData.accountName}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {selectedBankAccountData.bankName} • {selectedBankAccountData.accountNumber}
+                      {selectedBankAccountData.bankName} •{" "}
+                      {selectedBankAccountData.accountNumber}
                     </p>
                   </div>
                 </>
@@ -347,7 +362,7 @@ export function TradeSellModal({ onContinue }: TradeSellModalProps) {
           !selectedCountry ||
           !amount ||
           parseFloat(amount) <= 0 ||
-          parseFloat(amount) > stableCoinBalance ||
+          parseFloat(amount) > parseFloat(stableCoinBalance.toString()) ||
           !selectedBankAccount
         }
         className="w-full bg-purple-600 hover:bg-purple-700 text-white py-6 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
@@ -356,7 +371,7 @@ export function TradeSellModal({ onContinue }: TradeSellModalProps) {
           ? "Select country"
           : !amount || parseFloat(amount) <= 0
           ? "Enter amount"
-          : parseFloat(amount) > stableCoinBalance
+          : parseFloat(amount) > parseFloat(stableCoinBalance.toString())
           ? "Insufficient balance"
           : !selectedBankAccount
           ? "Select bank account"
@@ -365,4 +380,3 @@ export function TradeSellModal({ onContinue }: TradeSellModalProps) {
     </div>
   );
 }
-

@@ -18,14 +18,16 @@ import { SwapType } from "@/enums";
 import { TradeSwapModal } from "./TradeSwapModal";
 import { TradeBuyModal } from "./TradeBuyModal";
 import { TradeSellModal } from "./TradeSellModal";
+import { initiateBuy } from "@/api/routes/buy";
+import { initiateSell } from "@/api/routes/sell";
 
 interface TradeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onTransactionComplete: (txHash: string) => void;
+  onTransactionComplete: (txId: string) => Promise<void>;
 }
 
-type TradeTab = "swap" | "buy" | "sell";
+type TradeTab = "buy" | "sell" | "swap";
 type Step = "select" | "confirm" | "processing" | "success";
 
 interface SwapData {
@@ -47,7 +49,12 @@ interface SellData {
   country: string;
   stableCoin: string;
   amount: string;
-  bankAccount: string;
+  bankAccount: {
+    accountNumber?: string;
+    accountName?: string;
+    bankName?: string;
+    bankCode?: string;
+  } | null;
 }
 
 export function TradeModal({
@@ -100,7 +107,8 @@ export function TradeModal({
           to: swapData.toToken,
           amount: parseFloat(swapData.amount),
           estimated: parseFloat(swapData.estimated),
-          rate: parseFloat(swapData.estimated) / parseFloat(swapData.amount) || 0,
+          rate:
+            parseFloat(swapData.estimated) / parseFloat(swapData.amount) || 0,
           status: "pending",
           userId: user.id,
           reference: `SWAP_${Date.now()}`,
@@ -109,21 +117,107 @@ export function TradeModal({
 
         response = await executeSwap(token, payload);
       } else if (activeTab === "buy" && buyData) {
-        // For buy, this would typically integrate with payment provider (Flutterwave, etc.)
-        // For now, simulate a transaction
-        response = {
-          transaction_hash: `BUY_${Date.now()}`,
-          status: "success",
+        // 1. Prepare the payload
+        const payload = {
+          amountNGN: parseFloat(buyData.amount),
+          paymentMethod: buyData.paymentMethod,
         };
-        addToast("Buy order placed successfully", "success");
+
+        try {
+          // 2. Initiate the buy process
+          const response = await initiateBuy(payload, token);
+
+          if (!response.success) {
+            throw new Error(response.message || "Failed to initiate payment");
+          }
+
+          if (response.data.paymentLink) {
+            window.location.href = response.data.paymentLink;
+            return;
+          }
+
+          // // 3. Load Flutterwave script dynamically
+          // const loadFlutterwaveScript = () => {
+          //   return new Promise((resolve) => {
+          //     if (document.getElementById('flutterwave-script')) {
+          //       return resolve(true);
+          //     }
+          //     const script = document.createElement('script');
+          //     script.id = 'flutterwave-script';
+          //     script.src = 'https://checkout.flutterwave.com/v3.js';
+          //     script.onload = () => resolve(true);
+          //     document.body.appendChild(script);
+          //   });
+          // };
+
+          // await loadFlutterwaveScript();
+
+          // // 4. Show Flutterwave payment modal
+          // await new Promise((resolve, reject) => {
+          //   window.FlutterwaveCheckout({
+          //     public_key: response.data?.data?.publicKey,
+          //     tx_ref: response?.data?.data?.txRef,
+          //     amount: response?.data?.data?.amount,
+          //     currency: response?.data?.data?.currency,
+          //     payment_options: 'card,banktransfer',
+          //     customer: response?.data?.data?.customer,
+          //     customizations: response?.data?.data?.customizations,
+          //     callback: async (paymentResponse: any) => {
+          //       if (paymentResponse.status === 'successful') {
+          //         try {
+          //           await onTransactionComplete(paymentResponse);
+          //           onClose();
+          //         } catch (error) {
+          //           console.error('Error completing transaction:', error);
+          //         }
+          //       } else {
+          //         addToast('Payment was not successful. Please try again.', 'error');
+          //       }
+          //     },
+          //     onclose: () => {
+          //       reject(new Error('Payment modal closed'));
+          //     },
+          //   });
+          // });
+        } catch (error) {
+          console.error("Payment error:", error);
+          addToast("Payment failed. Please try again.", "error");
+        }
       } else if (activeTab === "sell" && sellData) {
-        // For sell, this would typically integrate with bank transfer API
-        // For now, simulate a transaction
-        response = {
-          transaction_hash: `SELL_${Date.now()}`,
-          status: "success",
-        };
-        addToast("Sell order placed successfully", "success");
+        try {
+          // Prepare payload
+          const payload = {
+            amount: parseFloat(sellData.amount),
+            currency: sellData.country,
+            bankAccount: sellData.bankAccount,
+          };
+
+          const sellResponse = await initiateSell(payload, token);
+
+          if (!sellResponse.success) {
+            throw new Error(sellResponse.message || "Failed to initiate sell");
+          }
+
+          // Normalize response to include a transaction_hash for downstream handling
+          const backendData = sellResponse.data;
+          response = {
+            transaction_hash:
+              backendData?.data?.transactionHash ||
+              backendData?.data?.id ||
+              `SELL_${Date.now()}`,
+            status:
+              backendData?.data?.status ||
+              (backendData?.success ? "processing" : "failed"),
+            raw: backendData,
+          };
+
+          addToast("Sell initiated. Awaiting payout confirmation.", "success");
+        } catch (error) {
+          console.error("Sell error:", error);
+          addToast("Sell failed. Please try again.", "error");
+          setStep("select");
+          return;
+        }
       } else {
         throw new Error("Invalid transaction data");
       }
@@ -230,7 +324,12 @@ export function TradeModal({
                   <ArrowPathIcon className="h-8 w-8 text-purple-400" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">
-                  Confirm {activeTab === "swap" ? "Swap" : activeTab === "buy" ? "Buy" : "Sell"}
+                  Confirm{" "}
+                  {activeTab === "swap"
+                    ? "Swap"
+                    : activeTab === "buy"
+                    ? "Buy"
+                    : "Sell"}
                 </h3>
                 <p className="text-gray-400">Review your transaction details</p>
               </div>
@@ -265,7 +364,9 @@ export function TradeModal({
                   <>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Country:</span>
-                      <span className="text-white font-semibold">{buyData.country}</span>
+                      <span className="text-white font-semibold">
+                        {buyData.country}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Amount:</span>
@@ -281,7 +382,9 @@ export function TradeModal({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Payment Method:</span>
-                      <span className="text-white font-semibold">{buyData.paymentMethod}</span>
+                      <span className="text-white font-semibold">
+                        {buyData.paymentMethod}
+                      </span>
                     </div>
                   </>
                 )}
@@ -290,7 +393,9 @@ export function TradeModal({
                   <>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Country:</span>
-                      <span className="text-white font-semibold">{sellData.country}</span>
+                      <span className="text-white font-semibold">
+                        {sellData.country}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Selling:</span>
@@ -306,7 +411,15 @@ export function TradeModal({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Bank Account:</span>
-                      <span className="text-white font-semibold">{sellData.bankAccount}</span>
+                      <span className="text-white font-semibold">
+                        {sellData.bankAccount?.accountName || ""}{" "}
+                        {sellData.bankAccount?.bankName
+                          ? "• " + sellData.bankAccount?.bankName
+                          : ""}{" "}
+                        {sellData.bankAccount?.accountNumber
+                          ? "• " + sellData.bankAccount?.accountNumber
+                          : ""}
+                      </span>
                     </div>
                   </>
                 )}
@@ -341,7 +454,12 @@ export function TradeModal({
                   onClick={confirmTransaction}
                   className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
                 >
-                  Confirm {activeTab === "swap" ? "Swap" : activeTab === "buy" ? "Buy" : "Sell"}
+                  Confirm{" "}
+                  {activeTab === "swap"
+                    ? "Swap"
+                    : activeTab === "buy"
+                    ? "Buy"
+                    : "Sell"}
                 </Button>
               </div>
             </div>
@@ -370,11 +488,17 @@ export function TradeModal({
                 <CheckCircleIcon className="h-10 w-10 text-green-400" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">
-                {activeTab === "swap" ? "Swap" : activeTab === "buy" ? "Buy" : "Sell"} Successful!
+                {activeTab === "swap"
+                  ? "Swap"
+                  : activeTab === "buy"
+                  ? "Buy"
+                  : "Sell"}{" "}
+                Queued!
               </h3>
               <p className="text-gray-400 mb-6">
-                Your transaction has been processed successfully
+                Your transaction is been processed
               </p>
+              <p className="text-gray-400 mb-6">ETA 30mins</p>
               <div className="bg-gray-800 p-4 rounded-lg mb-6">
                 <div className="text-3xl font-bold text-purple-400 mb-1">
                   {activeTab === "swap" && swapData
@@ -391,7 +515,7 @@ export function TradeModal({
                 {transactionHash && (
                   <div className="mt-4 pt-4 border-t border-gray-700">
                     <div className="text-sm text-gray-400 mb-2">
-                      Transaction Hash
+                      Transaction ID
                     </div>
                     <div className="flex items-center space-x-2 mb-2">
                       <div className="flex-1 bg-gray-900 p-3 rounded-lg border border-gray-600">
@@ -402,7 +526,10 @@ export function TradeModal({
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(transactionHash);
-                          addToast("Transaction hash copied to clipboard", "success");
+                          addToast(
+                            "Transaction hash copied to clipboard",
+                            "success"
+                          );
                         }}
                         className="p-2 text-gray-400 hover:text-white transition-colors"
                         title="Copy transaction hash"
@@ -410,7 +537,7 @@ export function TradeModal({
                         <ClipboardIcon className="h-5 w-5" />
                       </button>
                     </div>
-                    <a
+                    {/* <a
                       href={`https://sepolia.starkscan.co/tx/${transactionHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -418,7 +545,7 @@ export function TradeModal({
                     >
                       View on StarkScan
                       <ArrowTopRightOnSquareIcon className="h-4 w-4 ml-1" />
-                    </a>
+                    </a> */}
                   </div>
                 )}
               </div>
@@ -435,4 +562,3 @@ export function TradeModal({
     </div>
   );
 }
-

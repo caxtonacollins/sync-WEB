@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 export default function Home() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const [showBalance, setShowBalance] = useState(true);
 
   useEffect(() => {
     if (!isLoading && !user) {

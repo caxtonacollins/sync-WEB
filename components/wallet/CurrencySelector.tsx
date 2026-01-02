@@ -2,20 +2,17 @@
 
 import React, { useState } from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
-import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/formatters";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 interface CurrencySelectorProps {
   totalValueUSD?: number;
-  totalValueNGN?: number;
   defaultCurrency?: string;
   onCurrencyChange?: (currency: string) => void;
 }
 
 export function CurrencySelector({
   totalValueUSD = 0,
-  totalValueNGN = 0,
   defaultCurrency = "USD",
   onCurrencyChange,
 }: CurrencySelectorProps) {
@@ -26,28 +23,12 @@ export function CurrencySelector({
   );
 
   const currencyOptions = [
-    { code: "USD", value: totalValueUSD, symbol: "$" },
-    { code: "NGN", value: totalValueNGN, symbol: "₦" },
-    { code: "PORTFOLIO", value: null, label: "Total Portfolio" },
+    { code: "USD", value: totalValueUSD, symbol: "$", label: "USD" },
+    { code: "PORTFOLIO", value: null, symbol: "💼", label: "Total Portfolio" },
   ];
 
-  const getCurrentDisplay = () => {
-    if (selectedCurrency === "PORTFOLIO") {
-      return {
-        label: "Total Portfolio",
-        value: null,
-        symbol: "💼",
-      };
-    }
-    const option = currencyOptions.find((o) => o.code === selectedCurrency);
-    return {
-      label: selectedCurrency,
-      value: option?.value || 0,
-      symbol: option?.symbol || selectedCurrency,
-    };
-  };
-
-  const current = getCurrentDisplay();
+  const currentDisplay = currencyOptions.find(c => c.code === selectedCurrency) || currencyOptions[0];
+  const isPortfolio = selectedCurrency === "PORTFOLIO";
 
   const handleCurrencySelect = (currency: string) => {
     setSelectedCurrency(currency);
@@ -56,68 +37,80 @@ export function CurrencySelector({
   };
 
   return (
-    <div className="space-y-3">
-      {/* Currency Display */}
+    <div className="space-y-4">
       <div className="relative">
         <button
           onClick={() => setShowDropdown(!showDropdown)}
-          className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 rounded-lg border border-gray-700 transition-all duration-200"
+          className="w-full flex items-center justify-between p-5 bg-gray-800/80 hover:bg-gray-700/80 rounded-xl border border-gray-700 backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-purple-500/10 rounded-lg">
+              <span className="text-2xl">{currentDisplay.symbol}</span>
+            </div>
             <div className="text-left">
-              <div className="text-xs text-gray-400 uppercase tracking-wider">
-                Displaying in
+              <div className="text-xs text-gray-400 uppercase tracking-wider font-medium">
+                {isPortfolio ? 'Portfolio Value' : 'Balance'}
               </div>
-              <div className="text-xl font-bold text-white">
-                {current.label}
+              <div className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                {formatCurrency(isPortfolio ? totalValueUSD : (currentDisplay.value || 0), 'USD')}
               </div>
             </div>
           </div>
 
-          {current.value !== null && (
-            <div className="text-right">
-              <div className="text-2xl font-bold text-transparent bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text">
-                {formatCurrency(current.value, current.label)}
-              </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-400">
+              {currentDisplay.label}
+            </span>
+            <div className="p-1.5 bg-gray-700/50 rounded-lg">
+              <ChevronDownIcon
+                className={`h-4 w-4 text-gray-300 transition-transform ${
+                  showDropdown ? "rotate-180" : ""
+                }`}
+              />
             </div>
-          )}
-
-          <ChevronDownIcon
-            className={`h-5 w-5 text-gray-400 transition-transform ${
-              showDropdown ? "rotate-180" : ""
-            }`}
-          />
+          </div>
         </button>
 
-        {/* Currency Dropdown Menu */}
         {showDropdown && (
-          <div className="absolute z-50 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl overflow-hidden">
-            {currencyOptions.map((option, idx) => (
+          <div className="absolute z-50 w-full mt-2 bg-gray-800/95 border border-gray-700/50 rounded-xl shadow-2xl overflow-hidden backdrop-blur-lg">
+            {currencyOptions.map((option) => (
               <button
-                key={idx}
+                key={option.code}
                 onClick={() => handleCurrencySelect(option.code)}
-                className={`w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors flex items-center justify-between border-b border-gray-700 last:border-0 ${
-                  selectedCurrency === option.code ? "bg-gray-700" : ""
+                className={`w-full px-4 py-3.5 text-left hover:bg-gray-700/80 transition-all duration-200 flex items-center justify-between ${
+                  selectedCurrency === option.code ? "bg-gray-700/50" : ""
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-xl">{option.symbol || "💼"}</span>
+                  <div className={`p-2 rounded-lg ${
+                    selectedCurrency === option.code 
+                      ? 'bg-purple-500/20' 
+                      : 'bg-gray-700/50'
+                  }`}>
+                    <span className="text-xl">{option.symbol}</span>
+                  </div>
                   <div>
-                    <div className="text-sm font-semibold text-white">
-                      {option.label || option.code}
+                    <div className={`text-sm font-semibold ${
+                      selectedCurrency === option.code 
+                        ? 'text-white' 
+                        : 'text-gray-200'
+                    }`}>
+                      {option.label}
                     </div>
-                    {option.value !== null && (
-                      <div className="text-xs text-gray-400">
-                        {formatCurrency(option.value, option.code)}
-                      </div>
-                    )}
+                    <div className={`text-xs ${
+                      selectedCurrency === option.code 
+                        ? 'text-gray-300' 
+                        : 'text-gray-400'
+                    }`}>
+                      {option.value !== null 
+                        ? formatCurrency(option.value, 'USD')
+                        : `Total: ${formatCurrency(totalValueUSD, 'USD')}`}
+                    </div>
                   </div>
                 </div>
 
                 {selectedCurrency === option.code && (
-                  <Badge className="bg-blue-900 text-blue-300 text-xs animate-pulse">
-                    ✓ Active
-                  </Badge>
+                  <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse"></div>
                 )}
               </button>
             ))}

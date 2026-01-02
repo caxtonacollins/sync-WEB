@@ -3,7 +3,7 @@ import { api } from "@/lib/api-client";
 export interface CreateTransferPayload {
   toAddress: string;
   amount: number;
-  token: string;
+  tokenSymbol: string;
 }
 
 export const transferToken = async (
@@ -11,7 +11,7 @@ export const transferToken = async (
   token: string
 ) => {
   try {
-    const response = await api.post("/transfer/token", payload, {
+    const response = await api.post("/token/transfer-token", payload, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;

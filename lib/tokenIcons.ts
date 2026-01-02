@@ -19,7 +19,7 @@ const DEFAULT_TOKEN_ICON = '/images/tokens/default-token.png';
  */
 export function getTokenIcon(symbol: string): string {
     if (!symbol) return DEFAULT_TOKEN_ICON;
-    return tokenIcons[symbol.toUpperCase()] || DEFAULT_TOKEN_ICON;
+    return tokenIcons[symbol] || DEFAULT_TOKEN_ICON;
 }
 
 /**
