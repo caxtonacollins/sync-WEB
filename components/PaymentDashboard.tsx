@@ -55,7 +55,6 @@ export default function PaymentDashboard() {
       addToast(`Transaction ID: ${txId.slice(0, 10)}...`, 'info');
     } catch (error) {
       console.error('Transaction completion error:', error);
-      addToast('Transaction completion failed', 'error');
     }
   }
 

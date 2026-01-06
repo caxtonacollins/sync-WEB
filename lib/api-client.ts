@@ -77,7 +77,6 @@ class ApiClient {
             }
           } catch (e) {
             this.clearAuthTokens();
-            // You might want to redirect to login here
             return Promise.reject(e);
           } finally {
             this.refreshPromise = null;
