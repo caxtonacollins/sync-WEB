@@ -46,7 +46,7 @@ export async function webhookHandler(payload: any) {
 
         const data = JSON.parse(rawBody.toString());
 
-        await api.post(`/buy/webhook`, data, {
+        await api.post(`/webhook/flutterwave`, data, {
             headers: { Authorization: `Bearer ${session.accessToken}` },
         });
 
