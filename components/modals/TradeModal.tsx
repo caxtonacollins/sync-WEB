@@ -111,8 +111,10 @@ export function TradeModal({
             parseFloat(swapData.estimated) / parseFloat(swapData.amount) || 0,
           status: "pending",
           userId: user.id,
-          reference: `SWAP_${Date.now()}`,
-          swapType: SwapType.MARKET, // Use MARKET for all swaps (token-to-token, stable-to-token, etc.)
+          reference: `SWAP_${Date.now()}${user.id}`,
+          swapType: SwapType.MARKET, // Use MARKET for all swaps 
+          metadata: {
+          },
         };
 
         response = await executeSwap(token, payload);

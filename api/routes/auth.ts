@@ -13,11 +13,8 @@ export const loginApi = async (
       { headers: { "Content-Type": "application/json" } }
     );
     return response.data;
-  } catch (err) {
-    const error = err as AxiosError<{ message?: string }>;
-    return {
-      error: error.response?.data?.message || error.message || "Login failed",
-    };
+  } catch (err: any) {
+   throw err.message;
   }
 };
 

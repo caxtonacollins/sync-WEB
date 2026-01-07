@@ -37,6 +37,12 @@ export interface CreateSwapOrderPayload {
   userId: string;
   reference: string;
   swapType: SwapType;
+  // optional explicit output amount
+  toAmount?: number;
+  // optional estimated output (backend maps to toAmount if provided)
+  estimated?: number;
+  // optional alias for input amount if needed by BE
+  fromAmount?: number;
 }
 
 export const executeSwap = async (

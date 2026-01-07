@@ -300,7 +300,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if ("error" in data) {
         return {
           success: false,
-          error: data.error || "Login failed",
+          error: data.error,
         };
       }
 
@@ -351,10 +351,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         access_token: newToken,
       };
     } catch (error) {
-      console.error("[AuthContext] Login failed:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Login failed",
+        error: error instanceof Error ? error.message : "Invalid Credentials",
       };
     }
   }, [router]);
